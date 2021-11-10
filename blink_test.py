@@ -1,6 +1,7 @@
 from mbientlab.metawear import MetaWear, libmetawear
 from mbientlab.metawear.cbindings import *
 import time
+import matplotlib.pyplot as plt
 
 _value_parsers = {
     DataTypeId.UINT32: lambda p: cast(p.contents.value, POINTER(c_uint)).contents.value,
@@ -83,10 +84,14 @@ class test():
         libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
         libmetawear.mbl_mw_gyro_bmi270_start(device.board)
         
+        # Start time to track data
         start_time = time.time()
+        
+        print("Tracking data has begun")
 
         time.sleep(15.0)
-        
+
+        print("Tracking data has stopped")
         # Disable the gyroscope
         libmetawear.mbl_mw_gyro_bmi160_stop(device.board)
         libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(device.board)
@@ -104,19 +109,33 @@ class test():
         signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
         libmetawear.mbl_mw_datasignal_unsubscribe(signal)
         libmetawear.mbl_mw_debug_disconnect(device.board)
+        
+        figs, axs = plt.subplots(1,2)
+        axs[0].plot(self.time_acc,self.x_acc, label = "X")
+        axs[0].plot(self.time_acc,self.y_acc, label = "Y")
+        axs[0].plot(self.time_acc,self.z_acc, label = "Z")
+        axs[0].set_title('Acc')
+        axs[0].legend()
 
+        axs[1].plot(self.time_gyr,self.x_gyr, label = "X")
+        axs[1].plot(self.time_gyr,self.y_gyr, label = "Y")
+        axs[1].plot(self.time_gyr,self.z_gyr, label = "Z")
+        axs[1].set_title('Gyr')
+        axs[1].legend()
+
+        plt.show()
 
 
     # Callback function to process/parse the gyroscope data
     def data_handler_acc(self, ctx, data):
-        print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
+        #print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
         self. x_acc.append(parse_value(data).x)
         self.y_acc.append(parse_value(data).y)
         self.z_acc.append(parse_value(data).z)
         self.time_acc.append(time.time()-self.start_time)
 
     def data_handler_gyr(self, ctx, data):
-        print("%s    : %s -> %s" % ("Gyroscope", self.device.address, parse_value(data)))
+        #print("%s    : %s -> %s" % ("Gyroscope", self.device.address, parse_value(data)))
         self. x_gyr.append(parse_value(data).x)
         self.y_gyr.append(parse_value(data).y)
         self.z_gyr.append(parse_value(data).z)
