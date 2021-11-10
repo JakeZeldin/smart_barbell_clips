@@ -39,7 +39,20 @@ def main():
     device.disconnect()
 
 class test():
-        
+
+    x_acc = []
+    y_acc = []
+    z_acc = [] 
+
+    x_gyr = [] 
+    y_gyr = []
+    z_gyr = []
+
+    start_time = 0
+    
+    time_acc = []
+    time_gyr = []
+
     def __init__(self,device):
         
         self.device = device
@@ -69,6 +82,8 @@ class test():
         # Enable the gyroscope
         libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
         libmetawear.mbl_mw_gyro_bmi270_start(device.board)
+        
+        start_time = time.time()
 
         time.sleep(15.0)
         
@@ -95,10 +110,17 @@ class test():
     # Callback function to process/parse the gyroscope data
     def data_handler_acc(self, ctx, data):
         print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
+        self. x_acc.append(parse_value(data).x)
+        self.y_acc.append(parse_value(data).y)
+        self.z_acc.append(parse_value(data).z)
+        self.time_acc.append(time.time()-self.start_time)
 
     def data_handler_gyr(self, ctx, data):
         print("%s    : %s -> %s" % ("Gyroscope", self.device.address, parse_value(data)))
-
+        self. x_gyr.append(parse_value(data).x)
+        self.y_gyr.append(parse_value(data).y)
+        self.z_gyr.append(parse_value(data).z)
+        self.time_gyr.append(time.time()-self.start_time)
 
 def parse_value(pointer, **kwargs):
         """
