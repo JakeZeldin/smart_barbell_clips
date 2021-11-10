@@ -44,8 +44,9 @@ class test():
         
         self.device = device
         # Callback function pointer
-        callback = FnVoid_VoidP_DataP(self.data_handler)
-        
+        callback_acc = FnVoid_VoidP_DataP(self.data_handler_acc)
+        callback_gyr = FnVoid_VoidP_DataP(self.data_handler_gyr)
+
         # Setup the accelerometer sample frequency and range
         libmetawear.mbl_mw_acc_set_odr(device.board, 100.0)
         libmetawear.mbl_mw_acc_set_range(device.board, 16.0)
@@ -54,13 +55,30 @@ class test():
         # Get the accelerometer data signal
         signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
         # Subscribe to it
-        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback)
+        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_acc)
 
         # Enable the accelerometer
         libmetawear.mbl_mw_acc_enable_acceleration_sampling(device.board)
         libmetawear.mbl_mw_acc_start(device.board)
-        
+       
+        # Get the gyroscope data signal
+        signal = libmetawear.mbl_mw_gyro_bmi270_get_packed_rotation_data_signal(device.board)
+        # Subscribe to it
+        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_gyr)
+
+        # Enable the gyroscope
+        libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
+        libmetawear.mbl_mw_gyro_bmi270_start(device.board)
+
         time.sleep(15.0)
+        
+        # Disable the gyroscope
+        libmetawear.mbl_mw_gyro_bmi160_stop(device.board)
+        libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(device.board)
+
+        # Unsubscribe to it
+        libmetawear.mbl_mw_datasignal_unsubscribe(signal)
+        libmetawear.mbl_mw_debug_disconnect(device.board)
 
 
         # Disable the accelerometer
@@ -75,8 +93,12 @@ class test():
 
 
     # Callback function to process/parse the gyroscope data
-    def data_handler(self, ctx, data):
-        print("%s -> %s" % (self.device.address, parse_value(data)))
+    def data_handler_acc(self, ctx, data):
+        print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
+
+    def data_handler_gyr(self, ctx, data):
+        print("%s    : %s -> %s" % ("Gyroscope", self.device.address, parse_value(data)))
+
 
 def parse_value(pointer, **kwargs):
         """
