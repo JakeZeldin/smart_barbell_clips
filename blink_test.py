@@ -22,7 +22,9 @@ _value_parsers = {
 }
 
 def main():
-    address = "C4:A3:A4:75:A2:86"
+
+    address = "C7:EA:21:57:F5:E2"
+    #address = "C4:A3:A4:75:A2:86"
     device = MetaWear(address)
     device.connect()
 
