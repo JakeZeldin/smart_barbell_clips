@@ -62,55 +62,81 @@ class test():
         # Callback function pointer
         callback_acc = FnVoid_VoidP_DataP(self.data_handler_acc)
         callback_gyr = FnVoid_VoidP_DataP(self.data_handler_gyr)
+        callback     = FnVoid_VoidP_DataP(self.data_handler)
 
         # Setup the accelerometer sample frequency and range
-        libmetawear.mbl_mw_acc_set_odr(device.board, 100.0)
-        libmetawear.mbl_mw_acc_set_range(device.board, 16.0)
-        libmetawear.mbl_mw_acc_write_acceleration_config(device.board)
+        #libmetawear.mbl_mw_acc_set_odr(device.board, 100.0)
+        #libmetawear.mbl_mw_acc_set_range(device.board, 16.0)
+        #libmetawear.mbl_mw_acc_write_acceleration_config(device.board)
 
         # Get the accelerometer data signal
-        signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
+        #signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
         # Subscribe to it
-        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_acc)
+        #libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_acc)
 
         # Enable the accelerometer
-        libmetawear.mbl_mw_acc_enable_acceleration_sampling(device.board)
-        libmetawear.mbl_mw_acc_start(device.board)
+        #libmetawear.mbl_mw_acc_enable_acceleration_sampling(device.board)
+        #libmetawear.mbl_mw_acc_start(device.board)
 
         # Get the gyroscope data signal
-        signal = libmetawear.mbl_mw_gyro_bmi270_get_packed_rotation_data_signal(device.board)
+        # signal = libmetawear.mbl_mw_gyro_bmi270_get_packed_rotation_data_signal(device.board)
         # Subscribe to it
-        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_gyr)
+        # libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_gyr)
 
         # Enable the gyroscope
-        libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
-        libmetawear.mbl_mw_gyro_bmi270_start(device.board)
+        # libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
+        #libmetawear.mbl_mw_gyro_bmi270_start(device.board)
+
+        # Sensor fusion setup
+        libmetawear.mbl_mw_sensor_fusion_set_mode(device.board, SensorFusionMode.IMU_PLUS);
+        libmetawear.mbl_mw_sensor_fusion_set_acc_range(device.board, SensorFusionAccRange._8G);
+        libmetawear.mbl_mw_sensor_fusion_set_gyro_range(device.board, SensorFusionGyroRange._2000DPS);
+        libmetawear.mbl_mw_sensor_fusion_write_config(device.board);
+
+        # Subscribe to the quaternion signal
+        signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(device.board, SensorFusionData.QUATERNION);
+        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback);
+
+
+        # Start sensor fusion (acc + gyro + mag + on-board sensor fusion algo)
+        libmetawear.mbl_mw_sensor_fusion_enable_data(device.board, SensorFusionData.QUATERNION);
+        libmetawear.mbl_mw_sensor_fusion_start(device.board);
 
         # Start time to track data
-        start_time = time.time()
+        
+        start_time = time.time()       
+
 
         print("Tracking data has begun")
 
-        time.sleep(15.0)
+        time.sleep(30.0)
 
         print("Tracking data has stopped")
+
+        # Stop sensor fusion
+        libmetawear.mbl_mw_sensor_fusion_stop(device.board);
+
+        # Unsubscribe
+        signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(device.board, SensorFusionData.QUATERNION);
+        libmetawear.mbl_mw_datasignal_unsubscribe(signal);
+
         # Disable the gyroscope
-        libmetawear.mbl_mw_gyro_bmi160_stop(device.board)
-        libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(device.board)
+        #libmetawear.mbl_mw_gyro_bmi160_stop(device.board)
+        #libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(device.board)
 
         # Unsubscribe to it
-        libmetawear.mbl_mw_datasignal_unsubscribe(signal)
-        libmetawear.mbl_mw_debug_disconnect(device.board)
+        #libmetawear.mbl_mw_datasignal_unsubscribe(signal)
+        #libmetawear.mbl_mw_debug_disconnect(device.board)
 
 
         # Disable the accelerometer
-        libmetawear.mbl_mw_acc_stop(device.board)
-        libmetawear.mbl_mw_acc_disable_acceleration_sampling(device.board)
+        #libmetawear.mbl_mw_acc_stop(device.board)
+        #libmetawear.mbl_mw_acc_disable_acceleration_sampling(device.board)
 
         # Unsubscribe to it
-        signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
-        libmetawear.mbl_mw_datasignal_unsubscribe(signal)
-        libmetawear.mbl_mw_debug_disconnect(device.board)
+        #signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
+        #libmetawear.mbl_mw_datasignal_unsubscribe(signal)
+        #libmetawear.mbl_mw_debug_disconnect(device.board)
 
         figs, axs = plt.subplots(1,2)
         axs[0].plot(self.time_acc,self.x_acc, label = "X")
@@ -130,8 +156,7 @@ class test():
 
     # Callback function to process/parse the gyroscope data
     def data_handler_acc(self, ctx, data):
-        print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
-        print(data)
+        #print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
         self. x_acc.append(parse_value(data).x)
         self.y_acc.append(parse_value(data).y)
         self.z_acc.append(parse_value(data).z)
@@ -143,6 +168,9 @@ class test():
         self.y_gyr.append(parse_value(data).y)
         self.z_gyr.append(parse_value(data).z)
         self.time_gyr.append(time.time()-self.start_time)
+    
+    def data_handler (self, ctx, data):
+        print("%s    : %s -> %s" % ("New", self.device.address, parse_value(data)))
 
 def parse_value(pointer, **kwargs):
         """
