@@ -23,8 +23,8 @@ _value_parsers = {
 
 def main():
 
-    address = "C7:EA:21:57:F5:E2"
-    #address = "C4:A3:A4:75:A2:86"
+    address = "C7:EA:21:57:F5:E2" #Will
+    #address = "C4:A3:A4:75:A2:86" #Matt
     device = MetaWear(address)
     device.connect()
 
@@ -32,7 +32,7 @@ def main():
     libmetawear.mbl_mw_led_load_preset_pattern(byref(pattern), LedPreset.SOLID)
     libmetawear.mbl_mw_led_write_pattern(device.board, byref(pattern), LedColor.GREEN)
     libmetawear.mbl_mw_led_play(device.board)
-   
+
     time.sleep(5.0)
     libmetawear.mbl_mw_led_stop_and_clear(device.board)
     time.sleep(1.0)
@@ -45,19 +45,19 @@ class test():
 
     x_acc = []
     y_acc = []
-    z_acc = [] 
+    z_acc = []
 
-    x_gyr = [] 
+    x_gyr = []
     y_gyr = []
     z_gyr = []
 
     start_time = 0
-    
+
     time_acc = []
     time_gyr = []
 
     def __init__(self,device):
-        
+
         self.device = device
         # Callback function pointer
         callback_acc = FnVoid_VoidP_DataP(self.data_handler_acc)
@@ -76,7 +76,7 @@ class test():
         # Enable the accelerometer
         libmetawear.mbl_mw_acc_enable_acceleration_sampling(device.board)
         libmetawear.mbl_mw_acc_start(device.board)
-       
+
         # Get the gyroscope data signal
         signal = libmetawear.mbl_mw_gyro_bmi270_get_packed_rotation_data_signal(device.board)
         # Subscribe to it
@@ -85,10 +85,10 @@ class test():
         # Enable the gyroscope
         libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
         libmetawear.mbl_mw_gyro_bmi270_start(device.board)
-        
+
         # Start time to track data
         start_time = time.time()
-        
+
         print("Tracking data has begun")
 
         time.sleep(15.0)
@@ -111,7 +111,7 @@ class test():
         signal = libmetawear.mbl_mw_acc_get_acceleration_data_signal(device.board)
         libmetawear.mbl_mw_datasignal_unsubscribe(signal)
         libmetawear.mbl_mw_debug_disconnect(device.board)
-        
+
         figs, axs = plt.subplots(1,2)
         axs[0].plot(self.time_acc,self.x_acc, label = "X")
         axs[0].plot(self.time_acc,self.y_acc, label = "Y")
@@ -145,7 +145,7 @@ class test():
 
 def parse_value(pointer, **kwargs):
         """
-        Helper function to extract the value from a Data object.  If you are storing the values to be used at a later time, 
+        Helper function to extract the value from a Data object.  If you are storing the values to be used at a later time,
         call copy.deepcopy preserve the value.  You do not need to do this if the underlying type is a native type or a byte array
         @params:
             pointer     - Required  : Pointer to a Data object
@@ -168,7 +168,7 @@ def parse_value(pointer, **kwargs):
             raise RuntimeError('Unrecognized data type id: ' + str(pointer.contents.type_id))
 
 
-        
+
 
 if __name__ == "__main__":
     main()
