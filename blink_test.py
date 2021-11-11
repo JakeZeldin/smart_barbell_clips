@@ -130,7 +130,8 @@ class test():
 
     # Callback function to process/parse the gyroscope data
     def data_handler_acc(self, ctx, data):
-        #print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
+        print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
+        print(data)
         self. x_acc.append(parse_value(data).x)
         self.y_acc.append(parse_value(data).y)
         self.z_acc.append(parse_value(data).z)
