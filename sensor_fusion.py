@@ -2,6 +2,7 @@ from mbientlab.metawear import MetaWear, libmetawear, parse_value
 from mbientlab.metawear.cbindings import *
 import time
 import matplotlib.pyplot as plt
+import scipy
 
 
 def main():
@@ -20,9 +21,24 @@ def main():
     print("Stopped")
     session.shutdown()
 
-    for q in session.quat_data:
-        print(q)
+    for la in session.lin_acc:
+        print(la)
 
+    acc_x = [acc[0] for acc in session.lin_acc]
+    acc_y = [acc[1] for acc in session.lin_acc]
+    acc_z = [acc[2] for acc in session.lin_acc]
+
+    vel_x = scipy.integrate.cumulative_trapezoid(acc_x)
+    vel_y = scipy.integrate.cumulative_trapezoid(acc_y)
+    vel_z = scipy.integrate.cumulative_trapezoid(acc_z)
+
+    pos_x = scipy.integrate.cumulative_trapezoid(vel_x)
+    pos_y = scipy.integrate.cumulative_trapezoid(vel_y)
+    pos_z = scipy.integrate.cumulative_trapezoid(vel_z)
+
+    print(pos_x)
+
+    device.on_disconnect = lambda status: print("disconnected")
     device.disconnect()
 
 
@@ -30,7 +46,7 @@ class State():
     def __init__(self, device):
         self.device = device
         self.samples = 0
-        self.quat_data = []
+        self.lin_acc = []
         self.callback = FnVoid_VoidP_DataP(self.data_handler)
 
     def startup(self):
@@ -45,12 +61,12 @@ class State():
 
         # Subscribe to the quaternion signal
         signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
-                SensorFusionData.QUATERNION);
+                SensorFusionData.LINEAR_ACC);
         libmetawear.mbl_mw_datasignal_subscribe(signal, None, self.callback);
 
         # Start sensor fusion (acc + gyro + mag + on-board sensor fusion algo)
         libmetawear.mbl_mw_sensor_fusion_enable_data(self.device.board, 
-                SensorFusionData.QUATERNION);
+                SensorFusionData.LINEAR_ACC);
         libmetawear.mbl_mw_sensor_fusion_start(self.device.board);
 
     def shutdown(self):
@@ -60,13 +76,14 @@ class State():
 
         # Unsubscribe
         signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
-                SensorFusionData.QUATERNION);
+                SensorFusionData.LINEAR_ACC);
         libmetawear.mbl_mw_datasignal_unsubscribe(signal);
 
 
     def data_handler (self, ctx, data):
         d = parse_value(data)
-        self.quat_data.append([d.w, d.x, d.y, d.z])
+        self.lin_acc.append([d.x, d.y, d.z])
+
         self.samples += 1
 
 
