@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 def main():
 
-    address = "C7:EA:21:57:F5:E2" #Will
-    #address = "C4:A3:A4:75:A2:86" #Matt
+    #address = "C7:EA:21:57:F5:E2" #Will
+    address = "C4:A3:A4:75:A2:86" #Matt
     device = MetaWear(address)
     device.connect()
 
@@ -62,34 +62,7 @@ class test():
         libmetawear.mbl_mw_acc_enable_acceleration_sampling(device.board)
         libmetawear.mbl_mw_acc_start(device.board)
 
-        # Get the gyroscope data signal
-        signal = libmetawear.mbl_mw_gyro_bmi270_get_packed_rotation_data_signal(device.board)
-        # Subscribe to it
-        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback_gyr)
-
-        # Enable the gyroscope
-        libmetawear.mbl_mw_gyro_bmi270_enable_rotation_sampling(device.board)
-        libmetawear.mbl_mw_gyro_bmi270_start(device.board)
-
-        # Sensor fusion setup
-        libmetawear.mbl_mw_sensor_fusion_set_mode(device.board, 
-                SensorFusionMode.IMU_PLUS);
-        libmetawear.mbl_mw_sensor_fusion_set_acc_range(device.board, 
-                SensorFusionAccRange._8G);
-        libmetawear.mbl_mw_sensor_fusion_set_gyro_range(device.board, 
-                SensorFusionGyroRange._2000DPS);
-        libmetawear.mbl_mw_sensor_fusion_write_config(device.board);
-
-        # Subscribe to the quaternion signal
-        signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(device.board, 
-                SensorFusionData.QUATERNION);
-        libmetawear.mbl_mw_datasignal_subscribe(signal, None, callback);
-
-
-        # Start sensor fusion (acc + gyro + mag + on-board sensor fusion algo)
-        libmetawear.mbl_mw_sensor_fusion_enable_data(device.board, 
-                SensorFusionData.QUATERNION);
-        libmetawear.mbl_mw_sensor_fusion_start(device.board);
+        
 
         # Start time to track data
         
@@ -98,26 +71,9 @@ class test():
 
         print("Tracking data has begun")
 
-        time.sleep(30.0)
+        time.sleep(5.0)
 
         print("Tracking data has stopped")
-
-        # Stop sensor fusion
-        libmetawear.mbl_mw_sensor_fusion_stop(device.board);
-
-        # Unsubscribe
-        signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(device.board, 
-                SensorFusionData.QUATERNION);
-        libmetawear.mbl_mw_datasignal_unsubscribe(signal);
-
-        # Disable the gyroscope
-        libmetawear.mbl_mw_gyro_bmi160_stop(device.board)
-        libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(device.board)
-
-        # Unsubscribe to it
-        libmetawear.mbl_mw_datasignal_unsubscribe(signal)
-        libmetawear.mbl_mw_debug_disconnect(device.board)
-
 
         # Disable the accelerometer
         libmetawear.mbl_mw_acc_stop(device.board)
@@ -146,8 +102,7 @@ class test():
 
     # Callback function to process/parse the gyroscope data
     def data_handler_acc(self, ctx, data):
-        #print("%s    : %s -> %s" % ("Accelrometer" \
-        #    self.device.address, parse_value(data)))
+        print("%s    : %s -> %s" % ("Accelrometer", self.device.address, parse_value(data)))
         self. x_acc.append(parse_value(data).x)
         self.y_acc.append(parse_value(data).y)
         self.z_acc.append(parse_value(data).z)

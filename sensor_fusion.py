@@ -1,10 +1,12 @@
 from mbientlab.metawear import MetaWear, libmetawear, parse_value
 from mbientlab.metawear.cbindings import *
 import time
+import math 
 import matplotlib.pyplot as plt
 import scipy.integrate
+import numpy
 from mpl_toolkits.mplot3d import Axes3D
-
+from scipy import signal
 
 def main():
 
@@ -18,13 +20,38 @@ def main():
 
     session.startup()
     print("Recording")
-    time.sleep(5)
+    time.sleep(10)
     print("Stopped")
-    session.shutdown()
-
-    acc_x = [acc[0]*9.81 for acc in session.lin_acc]
-    acc_y = [acc[1]*9.81 for acc in session.lin_acc]
+    
+    acc_x = [(acc[0]*9.81) for acc in session.lin_acc]
+    acc_y = [(acc[1]*9.81) for acc in session.lin_acc]
     acc_z = [(acc[2]*9.81) for acc in session.lin_acc]
+
+    acc_mag = [None]*len(acc_z)
+    acc_magFilt = [None]*len(acc_z)
+    stationary = [0]*len(acc_z)
+
+    for i in range(len(acc_z)):
+        acc_mag[i] =math.sqrt(acc_x[i]*acc_x[i]+acc_y[i]*acc_y[i]+acc_z[i]*acc_z[i]) 
+    
+    filterCutOff = 0.001
+    b,a = signal.butter(1,(2*filterCutOff)/100,'high')
+    acc_magFilt = signal.filtfilt(b , a, acc_mag)
+    
+    for i in range(len(acc_magFilt)):
+        acc_magFilt[i] = abs(acc_magFilt[i])
+
+    filterCutOff = 5
+    b,a = signal.butter(1,(2*filterCutOff)/100,'high')
+    acc_magFilt= signal.filtfilt(b , a, acc_magFilt)
+    
+    for i in range(len(acc_magFilt)):
+        acc_magFilt[i] = abs(acc_magFilt[i])
+        
+        
+        if acc_magFilt[i] < 0.05:
+            stationary[i] = 1
+    
 
     for i in range(len(acc_z)):
         if (abs(acc_x[i]) < 0.2):
@@ -33,32 +60,93 @@ def main():
             acc_y[i] = 0
         if (abs(acc_z[i]) < 0.2):
             acc_z[i] = 0
-        print(acc_x[i], acc_y[i], acc_z[i])
+        
 
 
     vel_x = [0] 
     vel_y = [0] 
     vel_z = [0] 
+    
     for i in range (1, len(acc_x) - 1):
-        vel_x.append(vel_x[i-1] + acc_x[i]*0.01)
-        vel_y.append(vel_y[i-1] + acc_y[i]*0.01)
-        vel_z.append(vel_z[i-1] + acc_z[i]*0.01)
-
+            vel_x.append(vel_x[i-1] + acc_x[i]*0.01)
+            vel_y.append(vel_y[i-1] + acc_y[i]*0.01)
+            vel_z.append(vel_z[i-1] + acc_z[i]*0.01)
+            if stationary[i] == 1:
+                vel_x[i] = 0
+                vel_y[i] = 0
+                vel_z[i] = 0
+            
     # vel_x = scipy.integrate.cumulative_trapezoid(acc_x)
     # vel_y = scipy.integrate.cumulative_trapezoid(acc_y)
     # vel_z = scipy.integrate.cumulative_trapezoid(acc_z)
+    
 
+    velDrift_x = [0]*len(vel_x)
+    velDrift_y = [0]*len(vel_y)
+    velDrift_z = [0]*len(vel_z)
+    stationary_start = [0]*len(stationary)
+    staionary_end    = [0]*len(stationary)
+
+
+    
+    stationary_start = numpy.argwhere(numpy.diff(stationary)== -1)
+    stationary_end   = numpy.argwhere(numpy.diff(stationary)== 1)
+    
+    vel_drift_x = [0]*len(vel_x)
+    vel_drift_y = [0]*len(vel_y)
+    vel_drift_z = [0]*len(vel_z)
+    for i in range(stationary_end.size):
+        driftRate_x = (vel_x[stationary_end[i,0]-1])/(stationary_end[i,0]- stationary_start[i,0])
+        driftRate_y = (vel_y[stationary_end[i,0]-1])/(stationary_end[i,0]- stationary_start[i,0])
+        driftRate_z = (vel_z[stationary_end[i,0]-1])/(stationary_end[i,0]- stationary_start[i,0])
+        
+        
+        enum = [0]
+        range_var = stationary_end[i,0]-stationary_start[i,0]
+        print("range")
+        print(range_var)
+        drift_var_x = [None]*range_var
+        drift_var_y = [None]*range_var
+        drift_var_z = [None]*range_var
+
+    
+        for w in range(0,range_var):
+            drift_var_x[w] = w*driftRate_x
+            drift_var_y[w] = w*driftRate_y
+            drift_var_z[w] = w*driftRate_z
+        
+        for w in range(range_var-1):
+            
+            start = w+stationary_start[0,0]
+            
+            vel_drift_x[w+stationary_start[0,0]] = drift_var_x[w]
+            vel_drift_y[w+stationary_start[0,0]] = drift_var_y[w]
+            vel_drift_z[w+stationary_start[0,0]] = drift_var_z[w]
+
+ 
+
+    for i in range(len(vel_x)):
+        vel_x[i] = vel_x[i] - vel_drift_x[i]
+        vel_y[i] = vel_y[i] - vel_drift_y[i]
+        vel_z[i] = vel_z[i] - vel_drift_z[i]
+
+    
     pos_x = [0] 
     pos_y = [0] 
-    pos_z = [0] 
+    pos_z = [0]
+
+
+    
     for i in range (1, len(vel_x) - 1):
         pos_x.append(pos_x[i-1] + vel_x[i]*0.01)
         pos_y.append(pos_y[i-1] + vel_y[i]*0.01)
         pos_z.append(pos_z[i-1] + vel_z[i]*0.01)
+    
 
     # pos_x = scipy.integrate.cumulative_trapezoid(vel_x)
     # pos_y = scipy.integrate.cumulative_trapezoid(vel_y)
     # pos_z = scipy.integrate.cumulative_trapezoid(vel_z)
+    
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
