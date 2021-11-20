@@ -1,3 +1,4 @@
+#sensor fusion in my home directory
 from mbientlab.metawear import MetaWear, libmetawear, parse_value
 from mbientlab.metawear.cbindings import *
 import time
@@ -9,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy import signal
 
 def main():
-
+    # which sensor are we using
     #address = "C7:EA:21:57:F5:E2" #Will
     address = "C4:A3:A4:75:A2:86" #Matt
 
@@ -17,20 +18,26 @@ def main():
     device.connect()
 
     session = State(device)
-
+    
     session.startup()
     print("Recording")
-    time.sleep(10)
+    time.sleep(5) #how long the sensor will record for
     print("Stopped")
     
+
+    # get the acceleration values from the session
     acc_x = [(acc[0]*9.81) for acc in session.lin_acc]
     acc_y = [(acc[1]*9.81) for acc in session.lin_acc]
     acc_z = [(acc[2]*9.81) for acc in session.lin_acc]
 
+
+    # start of some funky acceleration stuff
+    # initialize empty or 0 arrays
     acc_mag = [None]*len(acc_z)
     acc_magFilt = [None]*len(acc_z)
     stationary = [0]*len(acc_z)
-
+    
+    # acceleraton magnitude --> square root of (x^2 + y^2 + z^2)
     for i in range(len(acc_z)):
         acc_mag[i] =math.sqrt(acc_x[i]*acc_x[i]+acc_y[i]*acc_y[i]+acc_z[i]*acc_z[i]) 
     
@@ -52,17 +59,24 @@ def main():
         if acc_magFilt[i] < 0.05:
             stationary[i] = 1
     
-
+    
+    # change acceleration value to 0 if it is below a threshold
     for i in range(len(acc_z)):
         if (abs(acc_x[i]) < 0.2):
-            acc_x[i] = 0
+            acc_x[i] = 0.00
         if (abs(acc_y[i]) < 0.2):
-            acc_y[i] = 0
+            acc_y[i] = 0.00
         if (abs(acc_z[i]) < 0.2):
-            acc_z[i] = 0
+            acc_z[i] = 0.00
         
-
-
+    #acceleration done, now print it
+    print("\n\n\nacceleration: ")
+    for i in range(len(acc_z)): 
+        print(float("{:.2f}".format(acc_x[i])),float("{:.2f}".format(acc_y[i])),float("{:.2f}".format(acc_x[i])))
+    
+  
+  
+    # velocity begins
     vel_x = [0] 
     vel_y = [0] 
     vel_z = [0] 
@@ -80,7 +94,7 @@ def main():
     # vel_y = scipy.integrate.cumulative_trapezoid(acc_y)
     # vel_z = scipy.integrate.cumulative_trapezoid(acc_z)
     
-
+    
     velDrift_x = [0]*len(vel_x)
     velDrift_y = [0]*len(vel_y)
     velDrift_z = [0]*len(vel_z)
@@ -103,8 +117,8 @@ def main():
         
         enum = [0]
         range_var = stationary_end[i,0]-stationary_start[i,0]
-        print("range")
-        print(range_var)
+        #print("range")
+        #print(range_var)
         drift_var_x = [None]*range_var
         drift_var_y = [None]*range_var
         drift_var_z = [None]*range_var
@@ -130,7 +144,14 @@ def main():
         vel_y[i] = vel_y[i] - vel_drift_y[i]
         vel_z[i] = vel_z[i] - vel_drift_z[i]
 
+    #velocity done, now print it
+    print("\n\n\nvelocity: ")
+    for i in range(len(vel_z)): 
+        print(float("{:.2f}".format(vel_x[i])),float("{:.2f}".format(vel_y[i])),float("{:.2f}".format(vel_z[i])))
     
+   
+   
+    #position begins
     pos_x = [0] 
     pos_y = [0] 
     pos_z = [0]
