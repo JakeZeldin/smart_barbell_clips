@@ -84,7 +84,7 @@ def function(do_acc, do_gyro, do_fus, m,w, both_sens):
                 session.plot_fus(1)
             else:
                 session.plot_fus(2)
-    
+
     else:
         device1 = MetaWear(address)
         device2 = MetaWear(address)
@@ -272,6 +272,7 @@ class State():
             sensor_name = "C4"
         else:
             sensor_name = "C7"
+        plt.figure(num)
         plt.plot(self.acc_x, label = "X")
         plt.plot(self.acc_y, label = "Y")
         plt.plot(self.acc_z, label = "Z")
@@ -284,6 +285,7 @@ class State():
             sensor_name = "C4"
         else:
             sensor_name = "C7"
+        plt.figure(num)
         plt.plot(self.gyr_x, label = "X")
         plt.plot(self.gyr_y, label = "Y")
         plt.plot( self.gyr_z, label = "Z")
@@ -296,6 +298,7 @@ class State():
             sensor_name = "C4"
         else:
             sensor_name = "C7"
+        plt.figure(num)
         plt.plot(self.fus_x, label = "X")
         plt.plot(self.fus_y, label = "Y")
         plt.plot(self.fus_z, label = "Z")
@@ -308,8 +311,10 @@ class State():
             sensor_name = "C4"
         else:
             sensor_name = "C7"
-
+        
         figs, axs = plt.subplots(1,3)
+        
+        plt.figure(num)
         axs[0].plot(self.acc_x, label = "X")
         axs[0].plot(self.acc_y, label = "Y")
         axs[0].plot(self.acc_z, label = "Z")
@@ -336,8 +341,10 @@ class State():
             sensor_name = "C4"
         else:
             sensor_name = "C7"
-
+        
+    
         figs, axs = plt.subplots(1,2)
+        plt.figure(num)
         axs[0].plot(self.acc_x, label = "X")
         axs[0].plot(self.acc_y, label = "Y")
         axs[0].plot(self.acc_z, label = "Z")
@@ -357,8 +364,9 @@ class State():
             sensor_name = "C4"
         else:
             sensor_name = "C7"
-
+        
         figs, axs = plt.subplots(1,2)
+        plt.figure(num)
         axs[0].plot(self.acc_x, label = "X")
         axs[0].plot(self.acc_y, label = "Y")
         axs[0].plot(self.acc_z, label = "Z")
@@ -379,8 +387,9 @@ class State():
         else:
             sensor_name = "C7"
 
+    
         figs, axs = plt.subplots(1,2)
-
+        plt.figure(num)
         axs[0].plot(self.gyr_x, label = "X")
         axs[0].plot(self.gyr_y, label = "Y")
         axs[0].plot(self.gyr_z, label = "Z")
@@ -432,6 +441,12 @@ def main(argv):
         print("No sensor selected use -m(c4) or -w(c7) to select which sensor your using")
         sys.exit(2)
     
+    if do_acc == 0 and do_gyro == 0 and do_fus == 0:
+        
+        print("Get all data cause getting no data makes no sense")
+        do_acc = 1
+        do_gyro = 1
+        do_fus = 1
     
     function(do_acc, do_gyro, do_fus, m, w, both_sens)
 
