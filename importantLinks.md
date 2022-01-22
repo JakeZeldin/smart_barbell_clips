@@ -7,3 +7,6 @@ https://github.com/tlancon/barbellcv
 Repo which used OpenCV and green paint on barbell to provide feedback to lifter. Includes stuff like fixing camera 
 distortion using chessboard, running the software on both pre recorded video and live using webcam.
 https://github.com/kostecky/VBT-Barbell-Tracker
+
+Another openCV object tracking link
+https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
