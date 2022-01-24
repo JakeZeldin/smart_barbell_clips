@@ -30,15 +30,15 @@ def main():
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
 
-    parser.add_argument("-a", nargs='+',
-            choices=['x', 'y', 'z'],
-            help="plot acceleration in X, Y, and/or Z axis")
-    parser.add_argument("-v", nargs='+',
-            choices=['x', 'y', 'z'],
-            help="plot velocity in X, Y, and/or Z axis")
-    parser.add_argument("-p", nargs='+',
-            choices=['x', 'y', 'z'],
-            help="plot position in X, Y, and/or Z axis")
+    # parser.add_argument("-a", nargs='+',
+    #         choices=['x', 'y', 'z'],
+    #         help="plot acceleration in X, Y, and/or Z axis")
+    # parser.add_argument("-v", nargs='+',
+    #         choices=['x', 'y', 'z'],
+    #         help="plot velocity in X, Y, and/or Z axis")
+    # parser.add_argument("-p", nargs='+',
+    #         choices=['x', 'y', 'z'],
+    #         help="plot position in X, Y, and/or Z axis")
 
     parser.add_argument("-f", action="store_true",
             help="use mbient sensor fusion algorithm for absolute orientation "
