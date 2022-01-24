@@ -50,7 +50,9 @@ def main():
             help="time in T seconds to record for, default 5")
 
     # parser.add_argument("-z", "--zupt")
-    
+   
+    parser.add_argument("-e",default="butter", type=str, help="use a velocity error correction method")
+
     args = parser.parse_args()
 
     if args.l is None and args.r is None:
@@ -96,14 +98,20 @@ def main():
     if args.l is not None:
         for file_name in args.l:
             states.append(State(None, file_name))
-
+    
+    
+    
     for s in states:
         s.calc_vel()
         s.calc_pos()
         np.set_printoptions(suppress=True, precision=3)
-        print(s.lin_acc)
-        print(s.vel)
-        print(s.pos)
+        print("State: ", s)
+        print("Linear Acceleration: ")
+        #print(s.lin_acc)
+        print("\n\nVelocity: ")
+        #print(s.vel)
+        print("\n\nPosition: ")
+        #print(s.pos)
 
 
 class State():
