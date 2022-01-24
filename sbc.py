@@ -4,185 +4,131 @@ from mbientlab.metawear.cbindings import *
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import sys, getopt
+import scipy.integrate
+import sys
+import argparse
+import csv
+import os
 
 # for orienting in global frame
 from ahrs.filters import Madgwick
 from ahrs import Quaternion
 
 
-def function(do_acc, do_gyro, do_fus, m,w, both_sens):
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r", nargs='+', 
+            help="record with MAC address(es) of sensor(s) (only specify first"
+            " two characters) default = C7",
+            metavar="MAC")
+
+    parser.add_argument("-s", nargs='+',
+            help="save recording or loaded data to .data/CSV",
+            metavar="CSV")
+    parser.add_argument("-l", nargs='+',
+            help="load linear acceleration from .data/CSV",
+            metavar="CSV")
+
+    parser.add_argument("-a", nargs='+',
+            choices=['x', 'y', 'z'],
+            help="plot acceleration in X, Y, and/or Z axis")
+    parser.add_argument("-v", nargs='+',
+            choices=['x', 'y', 'z'],
+            help="plot velocity in X, Y, and/or Z axis")
+    parser.add_argument("-p", nargs='+',
+            choices=['x', 'y', 'z'],
+            help="plot position in X, Y, and/or Z axis")
+
+    parser.add_argument("-f", action="store_true",
+            help="use mbient sensor fusion algorithm for absolute orientation "
+            "acceleration")
+    parser.add_argument("-c", action="store_true",
+            help="correct raw acceleration with orientations from "
+            "non-proprietary sensor fusion. Has no effect on mbient fusion")
+    parser.add_argument("-t", default='5', type=int,
+            help="time in T seconds to record for, default 5")
+
+    # parser.add_argument("-z", "--zupt")
     
-    # which sensor are we using
-    if both_sens == 0 and w == 1:
-        address = "C7:EA:21:57:F5:E2" #Will
-    elif both_sens ==0 and m == 1:
-        address = "C4:A3:A4:75:A2:86" #Matt
-    else:
-        address1 = "C4:A3:A4:75:A2:86" #Matt
-        address2 = "C7:EA:21:57:F5:E2" #Will
-    
-    #Code for if only one sensor is being used
-    if both_sens == 0:
-        
-        device = MetaWear(address)
-        device.connect()
-        session = State(device)
-   
-        #Initialize and subscribe to the sensors that are being used 
-        if do_acc == 1:
-            session.startup_accelerometer()
-        if do_gyro == 1:
-            session.startup_gyroscope()
-        if do_fus == 1:
-            session.startup_fusion()
+    args = parser.parse_args()
 
-        #Start the sensors that are being used 
-        if do_acc == 1:
-            session.enable_accelerometer()
-        if do_gyro == 1:
-            session.enable_gyroscope()
-        if do_fus == 1:
-            session.enable_fusion()
-    
-        print("Recording")
+    if args.l is None and args.r is None:
+        print("Nothing to do")
+        return
 
-        time.sleep(5) #how long the sensor will record for
-        
-        print("Stopped")
-        
-        #Stop and unsubscribe to the sensors that were used
-        if do_acc == 1:
-            session.shutdown_accelerometer()
-        if do_gyro == 1:
-            session.shutdown_gyroscope()
-        if do_fus == 1:
-            session.shutdown_fusion()
+    states = []
+    if args.r is not None:
+        macs = []
+        for mac in args.r:
+            if mac == "C7":
+                macs.append("C7:EA:21:57:F5:E2")
+            elif mac == "C4":
+                macs.append("C4:A3:A4:75:A2:86")
 
-        #disconnect the device
-        device.disconnect()
+        for mac in macs:
+            device = MetaWear(mac)
+            device.connect()
+            states.append(State(device))
 
-        #Plot the data that was gathered 
-        if do_acc == 1 and do_gyro == 1 and do_fus == 1:
-            if m ==1:
-                session.plot_acc_gyr_fus(1)
+        for s in states:
+            if args.f:
+                s.start_fusion()
             else:
-                session.plot_acc_gyr_fus(2)
-        elif do_acc == 1 and do_gyro == 1 : 
-            if m == 1:
-                session.plot_acc_gyr(1)
-            else:
-                session.plot_acc_gyr(2)
-        elif do_gyro == 1 and do_fus == 1 :
-            if m == 1:
-                session.plot_gyr_fus(1)
-            else:
-                session.plot_gyr_fus(2)
-        elif do_acc == 1 and do_fus == 1 :
-            if m == 1:
-                session.plot_acc_fus(1)
-            else:
-                session.plot_acc_fus(2)
-        elif do_acc == 1:
-            if m == 1:
-                session.plot_acc(1)
-            else:
-                session.plot_acc(2)
-        elif do_gyro == 1:
-            if m == 1 :
-                session.plot_gyr(1)
-            else:
-                session.plot_gyr(2)
-        elif do_fus == 1:
-            if m == 1:
-                session.plot_fus(1)
-            else:
-                session.plot_fus(2)
-    
-    #If both devices are being used at the same time 
-    else:
-        
-        device1 = MetaWear(address1)
-        device2 = MetaWear(address2)
-        device1.connect()
-        device2.connect()
-        session1 = State(device1)
-        session2 = State(device2)
+                s.start_raw()
 
-        #Initialize and subscribe to the proper sensors on both devices
-        if do_acc == 1:
-            session1.startup_accelerometer()
-            session2.startup_accelerometer()
-        if do_gyro == 1:
-            session1.startup_gyroscope()
-            session2.startup_gyroscope()
-        if do_fus == 1:
-            session1.startup_fusion()
-            session2.startup_fusion()
+        time.sleep(args.t)
 
-        #Start the proper sensors on both devices
-        if do_acc == 1:
-            session1.enable_accelerometer()
-            session2.enable_accelerometer()
-        if do_gyro == 1:
-            session1.enable_gyroscope()
-            session2.enable_gyroscope()
-        if do_fus == 1:
-            session1.enable_fusion()
-            session2.enable_fusion()
+        for i,s in enumerate(states):
+            if args.f:
+                s.shutdown_fusion()
+            else:
+                s.shutdown_raw()
 
-        print("Recording")
-        time.sleep(5) #how long the sensor will record for
-        print("Stopped")
-        if do_acc == 1:
-            session1.shutdown_accelerometer()
-            session2.shutdown_accelerometer()
-        if do_gyro == 1:
-            session1.shutdown_gyroscope()
-            session2.shutdown_gyroscope()
-        if do_fus == 1:
-            session1.shutdown_fusion()
-            session2.shutdown_fusion()
+            if args.c and not args.f:
+                s.conv_to_lin_acc(correct=True)
+            else:
+                s.conv_to_lin_acc()
 
-        device1.disconnect()
-        device2.disconnect()
+            if args.s is not None:
+                s.save_lin_acc(args.s[i])
 
-        if do_acc == 1 and do_gyro == 1 and do_fus == 1:
-            session1.plot_acc_gyr_fus(1)
-            session2.plot_acc_gyr_fus(2)
-        
-        elif do_acc == 1 and do_fus == 1:
-            session1.plot_acc_fus(1)
-            session2.plot_acc_fus(2)
-        
-        elif do_gyro == 1 and do_fus:
-            session1.plot_gyr_fus(1)
-            session2.plot_gyr_fus(2)
-        
-        elif do_acc == 1 and do_gyro == 1:
-            session1.plot_acc_gyr(1)
-            session2.plot_acc_gyr(2)
-        
-        elif do_acc == 1:
-            session1.plot_acc(1)
-            session2.plot_acc(2)
-        
-        elif do_gyro == 1:
-            session1.plot_gyr(1)
-            session2.plot_gyr(2)
-        
-        elif do_fus == 1:
-            session1.plot_fus(1)
-            session2.plot_fus(2)
+    if args.l is not None:
+        for file_name in args.l:
+            states.append(State(None, file_name))
+
+    for s in states:
+        s.calc_vel()
+        s.calc_pos()
+        np.set_printoptions(suppress=True, precision=3)
+        print(s.lin_acc)
+        print(s.vel)
+        print(s.pos)
 
 
 class State():
-    def __init__(self, device):
+    def __init__(self, device, filename=None):
         self.device = device
         self.acc = []
         self.gyr = []
 
-        self.lin_acc = None 
+        if filename is None:
+            self.lin_acc = None 
+
+        else:
+            try: 
+                f = open(os.path.join(".data", filename), 'r')
+            except OSError:
+                print("Could not open data file")
+                sys.exit(2)
+
+            lin_acc = []
+            reader = csv.reader(f)
+            for row in reader:
+                lin_acc.append([float(x) for x in row])
+            self.lin_acc = np.array(lin_acc)
+            f.close()
+
         self.vel = None
         self.pos = None
 
@@ -207,13 +153,14 @@ class State():
 
         # Subscribe to the linear acceleration signal
         signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
-                SensorFusionData.LINEAR_ACC);
+                SensorFusionData.CORRECTED_ACC);
         libmetawear.mbl_mw_datasignal_subscribe(signal, None, self.acc_callback);
 
         # Start sensor fusion (acc + gyro + on-board sensor fusion algo)
         libmetawear.mbl_mw_sensor_fusion_enable_data(self.device.board, 
-                SensorFusionData.LINEAR_ACC);
+                SensorFusionData.CORRECTED_ACC);
         libmetawear.mbl_mw_sensor_fusion_start(self.device.board);
+
 
     def start_raw(self):
 
@@ -244,13 +191,14 @@ class State():
         libmetawear.mbl_mw_gyro_bmi160_enable_rotation_sampling(self.device.board)
         libmetawear.mbl_mw_gyro_bmi160_start(self.device.board)
 
+
     def shutdown_fusion(self):
         # Stop sensor fusion
         libmetawear.mbl_mw_sensor_fusion_stop(self.device.board);
 
         # Unsubscribe
         signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
-                SensorFusionData.LINEAR_ACC);
+                SensorFusionData.CORRECTED_ACC);
         libmetawear.mbl_mw_datasignal_unsubscribe(signal);
 
     
@@ -277,154 +225,15 @@ class State():
 
     def acc_data_handler (self, ctx, data):
         d = parse_value(data)
-        self.acc.append([d.x, d.y, d.z])
-    
+        self.acc.append([d.x*9.81, d.y*9.81, (d.z-0.981)*9.81])
+
 
     def gyr_data_handler (self, ctx, data):
         d = parse_value(data)
         self.gyr.append([d.x, d.y, d.z])
 
 
-    def plot_acc (self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-        plt.figure(num)
-        plt.plot(self.acc_x, label = "X")
-        plt.plot(self.acc_y, label = "Y")
-        plt.plot(self.acc_z, label = "Z")
-        plt.title('Acc ' + sensor_name)
-        plt.legend()
-        plt.show()
-
-    def plot_gyr (self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-        plt.figure(num)
-        plt.plot(self.gyr_x, label = "X")
-        plt.plot(self.gyr_y, label = "Y")
-        plt.plot( self.gyr_z, label = "Z")
-        plt.title('Gyr ' + sensor_name)
-        plt.legend()
-        plt.show()
-
-    def plot_fus (self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-        plt.figure(num)
-        plt.plot(self.fus_x, label = "X")
-        plt.plot(self.fus_y, label = "Y")
-        plt.plot(self.fus_z, label = "Z")
-        plt.title('Sensor Fusion ' + sensor_name)
-        plt.legend()
-        plt.show()
-
-    def plot_acc_gyr_fus(self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-        
-        figs, axs = plt.subplots(1,3)
-        
-        plt.figure(1)
-        axs[0].plot(self.acc_x, label = "X")
-        axs[0].plot(self.acc_y, label = "Y")
-        axs[0].plot(self.acc_z, label = "Z")
-        axs[0].set_title('Acc ' + sensor_name)
-        axs[0].legend()
-
-        axs[1].plot(self.gyr_x, label = "X")
-        axs[1].plot(self.gyr_y, label = "Y")
-        axs[1].plot(self.gyr_z, label = "Z")
-        axs[1].set_title('Gyr ' + sensor_name)
-        axs[1].legend()
-
-        axs[2].plot(self.fus_x, label = "X")
-        axs[2].plot(self.fus_y, label = "Y")
-        axs[2].plot(self.fus_z, label = "Z")
-        axs[2].set_title('Sensor Fusion ' + sensor_name)
-        axs[2].legend()
-
-        
-        plt.show()
-
-    def plot_acc_gyr(self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-        
-    
-        figs, axs = plt.subplots(1,2)
-        plt.figure(1)
-        axs[0].plot(self.acc_x, label = "X")
-        axs[0].plot(self.acc_y, label = "Y")
-        axs[0].plot(self.acc_z, label = "Z")
-        axs[0].set_title('Acc ' + sensor_name)
-        axs[0].legend()
-
-        axs[1].plot(self.gyr_x, label = "X")
-        axs[1].plot(self.gyr_y, label = "Y")
-        axs[1].plot(self.gyr_z, label = "Z")
-        axs[1].set_title('Gyr ' + sensor_name)
-        axs[1].legend()
-
-        plt.show()
-    
-    def plot_acc_fus(self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-        
-        figs, axs = plt.subplots(1,2)
-        plt.figure(1)
-        axs[0].plot(self.acc_x, label = "X")
-        axs[0].plot(self.acc_y, label = "Y")
-        axs[0].plot(self.acc_z, label = "Z")
-        axs[0].set_title('Acc ' + sensor_name)
-        axs[0].legend()
-
-        axs[1].plot(self.fus_x, label = "X")
-        axs[1].plot(self.fus_y, label = "Y")
-        axs[1].plot(self.fus_z, label = "Z")
-        axs[1].set_title('Sensor Fusion ' + sensor_name)
-        axs[1].legend()
-
-        plt.show()
-
-    def plot_gyr_fus(self, num):
-        if num == 1:
-            sensor_name = "C4"
-        else:
-            sensor_name = "C7"
-
-    
-        figs, axs = plt.subplots(1,2)
-        plt.figure(1)
-        axs[0].plot(self.gyr_x, label = "X")
-        axs[0].plot(self.gyr_y, label = "Y")
-        axs[0].plot(self.gyr_z, label = "Z")
-        axs[0].set_title('Gyr ' + sensor_name)
-        axs[0].legend()
-
-        axs[1].plot(self.fus_x, label = "X")
-        axs[1].plot(self.fus_y, label = "Y")
-        axs[1].plot(self.fus_z, label = "Z")
-        axs[1].set_title('Sensor Fusion ' + sensor_name)
-        axs[1].legend()
-
-        
-        plt.show()
-
     def conv_to_lin_acc(self, correct=False):
-
         # convert acc to lin_acc and return
         if not correct:
             self.lin_acc = np.array(self.acc)
@@ -448,78 +257,39 @@ class State():
         self.lin_acc = np.array(lin_acc)
 
 
-def main2():
-    np.set_printoptions(precision=3, suppress=True)
-    device = MetaWear("C7:EA:21:57:F5:E2")
-    device.connect()
-    session = State(device)
-    session.start_raw()
-    time.sleep(1)
-    session.shutdown_raw()
-    session.conv_to_lin_acc(correct=True)
-    print(session.lin_acc)
+    def save_lin_acc(self, filename):
+        try:
+            os.makedirs(".data")
+        except OSError:
+            pass # data dir already exists
 
-    
+        try:
+            with open(os.path.join(".data", filename), 'w') as f:
+                writer = csv.writer(f)
+                for row in self.lin_acc:
+                    writer.writerow([str(r) for r in row])
 
-def main(argv):    
-    do_acc = 0
-    do_gyro = 0
-    do_fus = 0
-    m = 0
-    w = 0
-    both_sens = 0
-    
-    #Flags for different options when running from command line
-    #do_acc causes the sensor to track acceleration
-    #do_gyro causes the sensor to track gyroscope
-    #do_fus causes the sensor to track linear acceleartion
-    #m means using sensor C4
-    #w means using sensor C7
+        except OSError:
+            print("Invalid write permissions")
 
-    try:
-        opts, args = getopt.getopt(argv,"agfmw",["acc","gyr","fus"])
-    except getopt.GetoptError:
-        print ("error FUCK")
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("-a","--acc"):
-            print ('Finna do accecleration')
-            do_acc = 1
-        elif opt in ("-g", "--gyr"):
-            print ('Finna do gyroscope')
-            do_gyro = 1
-        elif opt in ("-f", "--fus"):
-            print("Finna do sensor fusion")
-            do_fus = 1
-        elif opt == "-m":
-            m = 1
-        elif opt == "-w":
-            w = 1
-    
-    #if both sensors being used at the same time different code will be ran
-    #both_sens is a flag variable for this 
 
-    if m == 1 and w == 1:
-        
-        both_sens = 1
-    
-    if m ==0 and w == 0:
-        
-        print("No sensor selected use -m(c4) or -w(c7) to select which sensor your using")
-        sys.exit(2)
-    
-    if do_acc == 0 and do_gyro == 0 and do_fus == 0:
-        
-        print("Get all data cause getting no data makes no sense")
-        do_acc = 1
-        do_gyro = 1
-        do_fus = 1
-    
-    
-    #Call function to start data gathering
-    function(do_acc, do_gyro, do_fus, m, w, both_sens)
+    def calc_vel(self):
+        self.vel = scipy.integrate.cumulative_trapezoid(self.lin_acc, 
+                axis=0, dx=0.01)
+
+
+    def calc_pos(self):
+        self.pos = scipy.integrate.cumulative_trapezoid(self.vel, 
+                axis=0, dx=0.01)
+
+
+    def plot(self, data, title, units):
+        plt.plot(data)
+        plt.title = title
+        plt.ylabel = units
+        plt.show()
+
 
 if __name__ == "__main__":
-    main2()
-    #main(sys.argv[1:])
+    main()
 
