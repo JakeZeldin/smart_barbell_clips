@@ -51,7 +51,7 @@ def main():
 
     # parser.add_argument("-z", "--zupt")
    
-    parser.add_argument("-e",default="butter", type=str, help="use a velocity error correction method")
+    parser.add_argument("-e", type=str, help="after the acceleration has been found, apply an error correction method. Options are butter, new, ...")
 
     args = parser.parse_args()
 
@@ -98,19 +98,25 @@ def main():
     if args.l is not None:
         for file_name in args.l:
             states.append(State(None, file_name))
+
     
-    
-    
+    #data is now found as acceleration  
     for s in states:
-        s.calc_vel()
-        s.calc_pos()
+        if args.e is not None:
+            method = args.e
+            print(method)
+            s.error_correction(method)
+        else:
+            s.calc_vel()
+            s.calc_pos()
+            
+        #printing time
         np.set_printoptions(suppress=True, precision=3)
-        print("State: ", s)
-        print("Linear Acceleration: ")
+        print("Acceleration: ")
         #print(s.lin_acc)
-        print("\n\nVelocity: ")
+        print("\nVelocity: ")
         #print(s.vel)
-        print("\n\nPosition: ")
+        print("\nPosition: ")
         #print(s.pos)
 
 
@@ -290,6 +296,141 @@ class State():
         self.pos = scipy.integrate.cumulative_trapezoid(self.vel, 
                 axis=0, dx=0.01)
 
+
+    def error_correction(self, method):    
+         if method == "new":
+            print("new error correction method selected")
+            return
+         elif method == "butter":
+            print("buttery method for error correction")
+            return
+            #split acceleration in to x, y, and z (might need individual correction)
+            acc_x = [(acc[0]*9.81) for acc in self.lin_acc]
+            acc_y = [(acc[1]*9.81) for acc in self.lin_acc]
+            acc_z = [(acc[2]*9.81) for acc in self.lin_acc]
+
+            # initialize empty or 0 arrays
+            acc_mag = [None]*len(acc_z)
+            acc_magFilt = [None]*len(acc_z)
+            stationary = [0]*len(acc_z)
+
+            # acceleraton magnitude --> square root of (x^2 + y^2 + z^2)
+            for i in range(len(acc_z)):
+                acc_mag[i] =math.sqrt(acc_x[i]*acc_x[i]+acc_y[i]*acc_y[i]+acc_z[i]*acc_z[i])
+
+            filterCutOff = 0.001
+            b,a = signal.butter(1,(2*filterCutOff)/100,'high')
+            acc_magFilt = signal.filtfilt(b , a, acc_mag)
+
+            for i in range(len(acc_magFilt)):
+                acc_magFilt[i] = abs(acc_magFilt[i])
+
+            filterCutOff = 5
+            b,a = signal.butter(1,(2*filterCutOff)/100,'high')
+            acc_magFilt= signal.filtfilt(b , a, acc_magFilt)
+
+            for i in range(len(acc_magFilt)):
+                acc_magFilt[i] = abs(acc_magFilt[i])
+
+
+                if acc_magFilt[i] < 0.05:
+                    stationary[i] = 1
+
+
+            # change acceleration value to 0 if it is below a threshold
+            for i in range(len(acc_z)):
+                if (abs(acc_x[i]) < 0.2):
+                    acc_x[i] = 0.00
+                if (abs(acc_y[i]) < 0.2):
+                    acc_y[i] = 0.00
+                if (abs(acc_z[i]) < 0.2):
+                    acc_z[i] = 0.00
+
+            #acceleration done, now print it
+            #print("\n\n\nacceleration: ")
+            #for i in range(len(acc_z)):
+                #print(float("{:.2f}".format(acc_x[i])),float("{:.2f}".format(acc_y[i])),float("{:.2f}".format(acc_x[i])))
+
+            # velocity begins
+            vel_x = [0]
+            vel_y = [0]
+            vel_z = [0]
+
+            for i in range (1, len(acc_x) - 1):
+                    vel_x.append(vel_x[i-1] + acc_x[i]*0.01)
+                    vel_y.append(vel_y[i-1] + acc_y[i]*0.01)
+                    vel_z.append(vel_z[i-1] + acc_z[i]*0.01)
+                    if stationary[i] == 1:
+                        vel_x[i] = 0
+                        vel_y[i] = 0
+                        vel_z[i] = 0
+
+            velDrift_x = [0]*len(vel_x)
+            velDrift_y = [0]*len(vel_y)
+            velDrift_z = [0]*len(vel_z)
+            stationary_start = [0]*len(stationary)
+            staionary_end    = [0]*len(stationary)
+
+
+
+            stationary_start = numpy.argwhere(numpy.diff(stationary)== -1)
+            stationary_end   = numpy.argwhere(numpy.diff(stationary)== 1)
+
+            vel_drift_x = [0]*len(vel_x)
+            vel_drift_y = [0]*len(vel_y)
+            vel_drift_z = [0]*len(vel_z)
+            for i in range(stationary_end.size):
+                driftRate_x = (vel_x[stationary_end[i,0]-1])/(stationary_end[i,0]- stationary_start[i,0])
+                driftRate_y = (vel_y[stationary_end[i,0]-1])/(stationary_end[i,0]- stationary_start[i,0])
+                driftRate_z = (vel_z[stationary_end[i,0]-1])/(stationary_end[i,0]- stationary_start[i,0])
+
+
+                enum = [0]
+                range_var = stationary_end[i,0]-stationary_start[i,0]
+                #print("range")
+                #print(range_var)
+                drift_var_x = [None]*range_var
+                drift_var_y = [None]*range_var
+                drift_var_z = [None]*range_var
+
+
+                for w in range(0,range_var):
+                    drift_var_x[w] = w*driftRate_x
+                    drift_var_y[w] = w*driftRate_y
+                    drift_var_z[w] = w*driftRate_z
+
+                for w in range(range_var-1):
+
+                    start = w+stationary_start[0,0]
+
+                    vel_drift_x[w+stationary_start[0,0]] = drift_var_x[w]
+                    vel_drift_y[w+stationary_start[0,0]] = drift_var_y[w]
+                    vel_drift_z[w+stationary_start[0,0]] = drift_var_z[w]
+
+
+            for i in range(len(vel_x)):
+                vel_x[i] = vel_x[i] - vel_drift_x[i]
+                vel_y[i] = vel_y[i] - vel_drift_y[i]
+                vel_z[i] = vel_z[i] - vel_drift_z[i]
+
+            #velocity done, now print it
+            #print("\n\n\nvelocity: ")
+            #for i in range(len(vel_z)):
+                #print(float("{:.2f}".format(vel_x[i])),float("{:.2f}".format(vel_y[i])),float("{:.2f}".format(vel_z[i])))
+
+
+            #position begins
+            pos_x = [0]
+            pos_y = [0]
+            pos_z = [0]
+            for i in range (1, len(vel_x) - 1):
+                pos_x.append(pos_x[i-1] + vel_x[i]*0.01)
+                pos_y.append(pos_y[i-1] + vel_y[i]*0.01)
+                pos_z.append(pos_z[i-1] + vel_z[i]*0.01)
+    
+         else:
+            print("invalid method for error correction")
+            return
 
     def plot(self, data, title, units):
         plt.plot(data)
