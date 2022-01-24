@@ -29,7 +29,9 @@ def main():
     parser.add_argument("-l", nargs='+',
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
-
+    parser.add_argument("-d", nargs='+',
+            help="have first sensor enetered perform mbient fusion and second sensor perform wills fusion",
+            metavar="CSV")
     parser.add_argument("-a", nargs='+',
             choices=['x', 'y', 'z'],
             help="plot acceleration in X, Y, and/or Z axis")
@@ -56,42 +58,103 @@ def main():
     if args.l is None and args.r is None:
         print("Nothing to do")
         return
+    
+    if args.r.mac.len() != 2 and args.d is not None:
+        print("-d selected but not 2 sensors entered")
+        return 
 
     states = []
+    
+    #For when both sensors are performing different fusion opeations
+    C7 = None 
+    C4 = None
+
     if args.r is not None:
         macs = []
+        #counter used to see what sensor was entered first for when -d flag set
+        counter = 0;
         for mac in args.r:
             if mac == "C7":
                 macs.append("C7:EA:21:57:F5:E2")
+                if args.d is not None:
+                    if counter == 0:
+                        #c7 to perform mbient fusion c4 to perform will fusion
+                        C7 = "mfus"
+                        C4 = "wfus"
+                    else:
+                        #c7 to perform will fusion c4 to perform mbient fusion
+                        C7 = "wfus"
+                        C4 = "mfus"
+
             elif mac == "C4":
                 macs.append("C4:A3:A4:75:A2:86")
+                counter = 1
 
         for mac in macs:
             device = MetaWear(mac)
             device.connect()
-            states.append(State(device))
-
-        for s in states:
-            if args.f:
-                s.start_fusion()
-            else:
-                s.start_raw()
+            states.append(State(device,None,mac[:2]))
+        
+        if arg.d is None:
+            for s in states:
+                if args.f:
+                    s.start_fusion()
+                else:
+                    s.start_raw()
+        else:
+            for s in states:
+                if s.mac == "C4":
+                    #if for -d c4 to perform mbient fusion
+                    if C4 == "mfus":
+                        s.start_fusion()
+                    #if for -d c7 to pergorm will fusion 
+                    else:
+                        s.start_raw()
+                else:
+                    #if for -d c7 to perform mbient fusion
+                    if C7 == "mfus":
+                        s.start_fusion()
+                    #if for -d c7 to perform will fusion
+                    else:
+                        s.start_raw()
 
         time.sleep(args.t)
+        
+        if args.d is None:
+            for i,s in enumerate(states):
+                if args.f:
+                    s.shutdown_fusion()
+                else:
+                    s.shutdown_raw()
 
-        for i,s in enumerate(states):
-            if args.f:
-                s.shutdown_fusion()
-            else:
-                s.shutdown_raw()
+                if args.c and not args.f:
+                    s.conv_to_lin_acc(correct=True)
+                else:
+                    s.conv_to_lin_acc()
 
-            if args.c and not args.f:
-                s.conv_to_lin_acc(correct=True)
-            else:
-                s.conv_to_lin_acc()
+                if args.s is not None:
+                    s.save_lin_acc(args.s[i])
+        else:
+            for s in states:
+                if s.mac == "C4":
+                    #if for -d c4 shutdown mbient fusion
+                    if C4 == "mfus":
+                        s.shutdown_fusion()
+                        s.conv_to_lin_acc()
+                    #if dor -d c4 shutdown raw data collection
+                    else:
+                        s.shutdown_raw()
+                        s.conv_to_lin_acc(correct=True)
+                if s.mac =="C7":
+                    #if for -d c7 shutdown mbient fusion
+                    if C7 == "mfus":
+                        s.shutdown_fusion()
+                        s.conv_to_lin_acc()
+                    #if for -d c4 shutdown raw data collection 
+                    else:
+                        s.shutdown_raw()
+                        s.conv_to_lin_acc(correct=True)
 
-            if args.s is not None:
-                s.save_lin_acc(args.s[i])
 
     if args.l is not None:
         for file_name in args.l:
@@ -107,10 +170,11 @@ def main():
 
 
 class State():
-    def __init__(self, device, filename=None):
+    def __init__(self, device, filename=None, mac=None):
         self.device = device
         self.acc = []
         self.gyr = []
+        self.mac = mac
 
         if filename is None:
             self.lin_acc = None 
