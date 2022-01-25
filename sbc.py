@@ -149,7 +149,7 @@ def main():
                     else:
                         print("C4 shut down will fusion")
                         s.shutdown_raw()
-                        s.conv_to_lin_acc(correct=True)
+                        s.conv_to_lin_acc(correct=False)
                     
                     if args.s is not None:
                         print("C4 saving to " + args.s[i])
@@ -165,7 +165,7 @@ def main():
                     else:
                         print("C7 shut down will fusion")
                         s.shutdown_raw()
-                        s.conv_to_lin_acc(correct=True)
+                        s.conv_to_lin_acc(correct=False)
 
                     if args.s is not None:
                         print("C7 saving to " + args.s[i] )
