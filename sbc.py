@@ -59,7 +59,7 @@ def main():
         print("Nothing to do")
         return
     
-    if args.r.mac.len() != 2 and args.d is not None:
+    if len(args.r) != 2 and args.d is not None:
         print("-d selected but not 2 sensors entered")
         return 
 
@@ -95,7 +95,7 @@ def main():
             device.connect()
             states.append(State(device,None,mac[:2]))
         
-        if arg.d is None:
+        if args.d is None:
             for s in states:
                 if args.f:
                     s.start_fusion()
