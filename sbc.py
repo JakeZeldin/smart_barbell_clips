@@ -29,6 +29,7 @@ def main():
     parser.add_argument("-l", nargs='+',
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
+
     parser.add_argument("-d", action="store_true",
             help="have first sensor enetered perform mbient fusion and second sensor perform wills fusion")
     parser.add_argument("-a", nargs='+',
