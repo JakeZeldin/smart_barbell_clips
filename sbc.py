@@ -75,7 +75,7 @@ def main():
         for mac in args.r:
             if mac == "C7":
                 macs.append("C7:EA:21:57:F5:E2")
-                if args.d is not None:
+                if args.d is True:
                     if counter == 0:
                         #c7 to perform mbient fusion c4 to perform will fusion
                         C7 = "mfus"
@@ -94,7 +94,7 @@ def main():
             device.connect()
             states.append(State(device,None,mac[:2]))
         
-        if args.d is None:
+        if args.d is not True:
             for s in states:
                 if args.f:
                     s.start_fusion()
@@ -106,20 +106,24 @@ def main():
                     #if for -d c4 to perform mbient fusion
                     if C4 == "mfus":
                         s.start_fusion()
+                        print("C4 doing mbient fusion")
                     #if for -d c7 to pergorm will fusion 
                     else:
                         s.start_raw()
+                        print("C4 doing will fusion")
                 else:
                     #if for -d c7 to perform mbient fusion
                     if C7 == "mfus":
                         s.start_fusion()
+                        print("C7 doing mbient fusion")
                     #if for -d c7 to perform will fusion
                     else:
                         s.start_raw()
+                        print("C7 doing will fusion")
 
         time.sleep(args.t)
         
-        if args.d is None:
+        if args.d is not True:
             for i,s in enumerate(states):
                 if args.f:
                     s.shutdown_fusion()
@@ -138,27 +142,33 @@ def main():
                 if s.mac == "C4":
                     #if for -d c4 shutdown mbient fusion
                     if C4 == "mfus":
+                        print("C4 shut down mbient fusion")
                         s.shutdown_fusion()
                         s.conv_to_lin_acc()
                     #if dor -d c4 shutdown raw data collection
                     else:
+                        print("C4 shut down will fusion")
                         s.shutdown_raw()
                         s.conv_to_lin_acc(correct=True)
                     
                     if args.s is not None:
+                        print("C4 saving to " + args.s[i])
                         s.save_lin_acc(args.s[i])
 
                 if s.mac =="C7":
                     #if for -d c7 shutdown mbient fusion
                     if C7 == "mfus":
+                        print("C7 shut down mbient fusion")
                         s.shutdown_fusion()
                         s.conv_to_lin_acc()
                     #if for -d c4 shutdown raw data collection 
                     else:
+                        print("C7 shut down will fusion")
                         s.shutdown_raw()
                         s.conv_to_lin_acc(correct=True)
 
                     if args.s is not None:
+                        print("C7 saving to " + args.s[i] )
                         s.save_lin_acc(args.s[i])
 
 
