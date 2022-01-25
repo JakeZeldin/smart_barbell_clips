@@ -16,7 +16,7 @@ from ahrs import Quaternion
 
 
 def main():
-
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", nargs='+', 
             help="record with MAC address(es) of sensor(s) (only specify first"
@@ -29,9 +29,8 @@ def main():
     parser.add_argument("-l", nargs='+',
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
-    parser.add_argument("-d", nargs='+',
-            help="have first sensor enetered perform mbient fusion and second sensor perform wills fusion",
-            metavar="CSV")
+    parser.add_argument("-d", action="store_true",
+            help="have first sensor enetered perform mbient fusion and second sensor perform wills fusion")
     parser.add_argument("-a", nargs='+',
             choices=['x', 'y', 'z'],
             help="plot acceleration in X, Y, and/or Z axis")
@@ -135,7 +134,7 @@ def main():
                 if args.s is not None:
                     s.save_lin_acc(args.s[i])
         else:
-            for s in states:
+            for i,s in enumerate(states):
                 if s.mac == "C4":
                     #if for -d c4 shutdown mbient fusion
                     if C4 == "mfus":
@@ -145,6 +144,10 @@ def main():
                     else:
                         s.shutdown_raw()
                         s.conv_to_lin_acc(correct=True)
+                    
+                    if args.s is not None:
+                        s.save_lin_acc(args.s[i])
+
                 if s.mac =="C7":
                     #if for -d c7 shutdown mbient fusion
                     if C7 == "mfus":
@@ -154,6 +157,9 @@ def main():
                     else:
                         s.shutdown_raw()
                         s.conv_to_lin_acc(correct=True)
+
+                    if args.s is not None:
+                        s.save_lin_acc(args.s[i])
 
 
     if args.l is not None:
