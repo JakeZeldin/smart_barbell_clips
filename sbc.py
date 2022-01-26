@@ -39,7 +39,7 @@ def main():
             choices=['x', 'y', 'z'],
             help="plot velocity in X, Y, and/or Z axis")
     parser.add_argument("-p", nargs='+',
-            choices=['x', 'y', 'z'],
+            choices=['x', 'y', 'z', 'yz'],
             help="plot position in X, Y, and/or Z axis")
 
     parser.add_argument("-f", action="store_true",
@@ -59,7 +59,7 @@ def main():
         print("Nothing to do")
         return
     
-    if len(args.r) != 2 and args.d is not None:
+    if args.r and len(args.r) != 2 and args.d is not None:
         print("-d selected but not 2 sensors entered")
         return 
 
@@ -174,16 +174,42 @@ def main():
 
 
     if args.l is not None:
-        for file_name in args.l:
+    	for file_name in args.l:
             states.append(State(None, file_name))
 
     for s in states:
         s.calc_vel()
         s.calc_pos()
         np.set_printoptions(suppress=True, precision=3)
-        print(s.lin_acc)
-        print(s.vel)
-        print(s.pos)
+        #print(s.lin_acc)
+        #print(s.vel)
+        #print(s.pos) 
+        if args.a is not None:
+            for axis in args.a:
+                if axis == 'x':
+                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'NOT SURE')
+                if axis == 'y':
+                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'NOT SURE')
+                if axis == 'z':
+                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'NOT SURE')	
+        if args.v is not None:
+            for axis in args.v:
+                if axis == 'x':
+                    s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
+                if axis == 'y':
+                    s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
+                if axis == 'z':
+                    s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
+        if args.p is not None:
+            for axis in args.p:
+                if axis == 'x':
+                    s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
+                if axis == 'y':
+                    s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
+                if axis == 'z':
+                    s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
+                if axis == 'yz':
+                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
 
 
 class State():
@@ -192,6 +218,7 @@ class State():
         self.acc = []
         self.gyr = []
         self.mac = mac
+        self.filename = filename
 
         if filename is None:
             self.lin_acc = None 
@@ -365,12 +392,26 @@ class State():
 
 
     def plot(self, data, title, units):
+        if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
+            os.mkdir(f'plots/{self.filename}')
+        print(f'Saving {title}')
         plt.plot(data)
-        plt.title = title
-        plt.ylabel = units
-        plt.show()
+        plt.title(title)
+        plt.ylabel(units)
+        plt.savefig(f'plots/{self.filename}/{title}.png')
+        #plt.show() #Optional to show plot
+        plt.clf()
 
-
+    def plot2D(self, dataX, dataY, title, units):
+        if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
+            os.mkdir(f'plots/{self.filename}')
+        print(f'Saving {title}')
+        plt.plot(dataX, dataY)
+        plt.title(title)
+        plt.ylabel(units)
+        plt.savefig(f'plots/{self.filename}/{title}.png')
+        #plt.show() #Optional to show plot
+        plt.clf()
 if __name__ == "__main__":
     main()
 
