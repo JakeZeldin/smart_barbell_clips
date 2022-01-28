@@ -16,7 +16,7 @@ from ahrs import Quaternion
 
 
 def main():
-
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", nargs='+', 
             help="record with MAC address(es) of sensor(s) (only specify first"
@@ -30,15 +30,17 @@ def main():
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
 
-    # parser.add_argument("-a", nargs='+',
-    #         choices=['x', 'y', 'z'],
-    #         help="plot acceleration in X, Y, and/or Z axis")
-    # parser.add_argument("-v", nargs='+',
-    #         choices=['x', 'y', 'z'],
-    #         help="plot velocity in X, Y, and/or Z axis")
-    # parser.add_argument("-p", nargs='+',
-    #         choices=['x', 'y', 'z'],
-    #         help="plot position in X, Y, and/or Z axis")
+    parser.add_argument("-d", action="store_true",
+            help="have first sensor enetered perform mbient fusion and second sensor perform wills fusion")
+    parser.add_argument("-a", nargs='+',
+            choices=['x', 'y', 'z'],
+            help="plot acceleration in X, Y, and/or Z axis")
+    parser.add_argument("-v", nargs='+',
+            choices=['x', 'y', 'z'],
+            help="plot velocity in X, Y, and/or Z axis")
+    parser.add_argument("-p", nargs='+',
+            choices=['x', 'y', 'z', 'yz'],
+            help="plot position in X, Y, and/or Z axis")
 
     parser.add_argument("-f", action="store_true",
             help="use mbient sensor fusion algorithm for absolute orientation "
@@ -58,45 +60,123 @@ def main():
     if args.l is None and args.r is None:
         print("Nothing to do")
         return
+    
+    if args.r and len(args.r) != 2 and args.d is not None:
+        print("-d selected but not 2 sensors entered")
+        return 
 
     states = []
+    
+    #For when both sensors are performing different fusion opeations
+    C7 = None 
+    C4 = None
+
     if args.r is not None:
         macs = []
+        #counter used to see what sensor was entered first for when -d flag set
+        counter = 0;
         for mac in args.r:
             if mac == "C7":
                 macs.append("C7:EA:21:57:F5:E2")
+                if args.d is True:
+                    if counter == 0:
+                        #c7 to perform mbient fusion c4 to perform will fusion
+                        C7 = "mfus"
+                        C4 = "wfus"
+                    else:
+                        #c7 to perform will fusion c4 to perform mbient fusion
+                        C7 = "wfus"
+                        C4 = "mfus"
+
             elif mac == "C4":
                 macs.append("C4:A3:A4:75:A2:86")
+                counter = 1
 
         for mac in macs:
             device = MetaWear(mac)
             device.connect()
-            states.append(State(device))
-
-        for s in states:
-            if args.f:
-                s.start_fusion()
-            else:
-                s.start_raw()
+            states.append(State(device,None,mac[:2]))
+        
+        if args.d is not True:
+            for s in states:
+                if args.f:
+                    s.start_fusion()
+                else:
+                    s.start_raw()
+        else:
+            for s in states:
+                if s.mac == "C4":
+                    #if for -d c4 to perform mbient fusion
+                    if C4 == "mfus":
+                        s.start_fusion()
+                        print("C4 doing mbient fusion")
+                    #if for -d c7 to pergorm will fusion 
+                    else:
+                        s.start_raw()
+                        print("C4 doing will fusion")
+                else:
+                    #if for -d c7 to perform mbient fusion
+                    if C7 == "mfus":
+                        s.start_fusion()
+                        print("C7 doing mbient fusion")
+                    #if for -d c7 to perform will fusion
+                    else:
+                        s.start_raw()
+                        print("C7 doing will fusion")
 
         time.sleep(args.t)
+        
+        if args.d is not True:
+            for i,s in enumerate(states):
+                if args.f:
+                    s.shutdown_fusion()
+                else:
+                    s.shutdown_raw()
 
-        for i,s in enumerate(states):
-            if args.f:
-                s.shutdown_fusion()
-            else:
-                s.shutdown_raw()
+                if args.c and not args.f:
+                    s.conv_to_lin_acc(correct=True)
+                else:
+                    s.conv_to_lin_acc()
 
-            if args.c and not args.f:
-                s.conv_to_lin_acc(correct=True)
-            else:
-                s.conv_to_lin_acc()
+                if args.s is not None:
+                    s.save_lin_acc(args.s[i])
+        else:
+            for i,s in enumerate(states):
+                if s.mac == "C4":
+                    #if for -d c4 shutdown mbient fusion
+                    if C4 == "mfus":
+                        print("C4 shut down mbient fusion")
+                        s.shutdown_fusion()
+                        s.conv_to_lin_acc()
+                    #if dor -d c4 shutdown raw data collection
+                    else:
+                        print("C4 shut down will fusion")
+                        s.shutdown_raw()
+                        s.conv_to_lin_acc(correct=False)
+                    
+                    if args.s is not None:
+                        print("C4 saving to " + args.s[i])
+                        s.save_lin_acc(args.s[i])
 
-            if args.s is not None:
-                s.save_lin_acc(args.s[i])
+                if s.mac =="C7":
+                    #if for -d c7 shutdown mbient fusion
+                    if C7 == "mfus":
+                        print("C7 shut down mbient fusion")
+                        s.shutdown_fusion()
+                        s.conv_to_lin_acc()
+                    #if for -d c4 shutdown raw data collection 
+                    else:
+                        print("C7 shut down will fusion")
+                        s.shutdown_raw()
+                        s.conv_to_lin_acc(correct=False)
+
+                    if args.s is not None:
+                        print("C7 saving to " + args.s[i] )
+                        s.save_lin_acc(args.s[i])
+
 
     if args.l is not None:
-        for file_name in args.l:
+    	for file_name in args.l:
             states.append(State(None, file_name))
 
     
@@ -112,19 +192,53 @@ def main():
             
         #printing time
         np.set_printoptions(suppress=True, precision=3)
+<<<<<<< HEAD
         print("Acceleration: ")
         # print(s.lin_acc)
         print("\nVelocity: ")
         # print(s.vel)
         print("\nPosition: ")
         # print(s.pos)
+=======
+        #print(s.lin_acc)
+        #print(s.vel)
+        #print(s.pos) 
+        if args.a is not None:
+            for axis in args.a:
+                if axis == 'x':
+                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'NOT SURE')
+                if axis == 'y':
+                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'NOT SURE')
+                if axis == 'z':
+                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'NOT SURE')	
+        if args.v is not None:
+            for axis in args.v:
+                if axis == 'x':
+                    s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
+                if axis == 'y':
+                    s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
+                if axis == 'z':
+                    s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
+        if args.p is not None:
+            for axis in args.p:
+                if axis == 'x':
+                    s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
+                if axis == 'y':
+                    s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
+                if axis == 'z':
+                    s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
+                if axis == 'yz':
+                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
+>>>>>>> main
 
 
 class State():
-    def __init__(self, device, filename=None):
+    def __init__(self, device, filename=None, mac=None):
         self.device = device
         self.acc = []
         self.gyr = []
+        self.mac = mac
+        self.filename = filename
 
         if filename is None:
             self.lin_acc = None 
@@ -309,12 +423,26 @@ class State():
             return
 
     def plot(self, data, title, units):
+        if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
+            os.mkdir(f'plots/{self.filename}')
+        print(f'Saving {title}')
         plt.plot(data)
-        plt.title = title
-        plt.ylabel = units
-        plt.show()
+        plt.title(title)
+        plt.ylabel(units)
+        plt.savefig(f'plots/{self.filename}/{title}.png')
+        #plt.show() #Optional to show plot
+        plt.clf()
 
-
+    def plot2D(self, dataX, dataY, title, units):
+        if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
+            os.mkdir(f'plots/{self.filename}')
+        print(f'Saving {title}')
+        plt.plot(dataX, dataY)
+        plt.title(title)
+        plt.ylabel(units)
+        plt.savefig(f'plots/{self.filename}/{title}.png')
+        #plt.show() #Optional to show plot
+        plt.clf()
 if __name__ == "__main__":
     main()
 
