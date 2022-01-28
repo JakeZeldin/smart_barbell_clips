@@ -93,86 +93,88 @@ def main():
             device = MetaWear(mac)
             device.connect()
             states.append(State(device,None,mac[:2]))
-        
-        if args.d is None:
-            for s in states:
-                if args.f:
-                    s.start_fusion()
-                else:
-                    s.start_raw()
-        else:
-            for s in states:
-                if s.mac == "C4":
-                    #if for -d c4 to perform mbient fusion
-                    if C4 == "mfus":
+        while(1):     
+            if args.d is None:
+                for s in states:
+                    if args.f:
                         s.start_fusion()
-                    #if for -d c7 to pergorm will fusion 
                     else:
                         s.start_raw()
-                else:
-                    #if for -d c7 to perform mbient fusion
-                    if C7 == "mfus":
-                        s.start_fusion()
-                    #if for -d c7 to perform will fusion
+            else:
+                for s in states:
+                    if s.mac == "C4":
+                        #if for -d c4 to perform mbient fusion
+                        if C4 == "mfus":
+                            s.start_fusion()
+                        #if for -d c7 to pergorm will fusion 
+                        else:
+                            s.start_raw()
                     else:
-                        s.start_raw()
+                        #if for -d c7 to perform mbient fusion
+                        if C7 == "mfus":
+                            s.start_fusion()
+                        #if for -d c7 to perform will fusion
+                        else:
+                            s.start_raw()
 
-        time.sleep(args.t)
+            time.sleep(args.t)
         
-        if args.d is None:
-            for i,s in enumerate(states):
-                if args.f:
-                    s.shutdown_fusion()
-                else:
-                    s.shutdown_raw()
-
-                if args.c and not args.f:
-                    s.conv_to_lin_acc(correct=True)
-                else:
-                    s.conv_to_lin_acc()
-
-                if args.s is not None:
-                    s.save_lin_acc(args.s[i])
-        else:
-            for i,s in enumerate(states):
-                if s.mac == "C4":
-                    #if for -d c4 shutdown mbient fusion
-                    if C4 == "mfus":
+            if args.d is None:
+                for i,s in enumerate(states):
+                    if args.f:
                         s.shutdown_fusion()
-                        s.conv_to_lin_acc()
-                    #if dor -d c4 shutdown raw data collection
                     else:
                         s.shutdown_raw()
+
+                    if args.c and not args.f:
                         s.conv_to_lin_acc(correct=True)
+                    else:
+                        s.conv_to_lin_acc()
+
+                    if args.s is not None:
+                        s.save_lin_acc(args.s[i])
+            else:
+                for i,s in enumerate(states):
+                    if s.mac == "C4":
+                        #if for -d c4 shutdown mbient fusion
+                        if C4 == "mfus":
+                            s.shutdown_fusion()
+                            s.conv_to_lin_acc()
+                        #if for -d c4 shutdown raw data collection
+                        else:
+                            s.shutdown_raw()
+                            s.conv_to_lin_acc(correct=True)
                     
-                    if args.s is not None:
-                        s.save_lin_acc(args.s[i])
+                        if args.s is not None:
+                            s.save_lin_acc(args.s[i])
 
-                if s.mac =="C7":
-                    #if for -d c7 shutdown mbient fusion
-                    if C7 == "mfus":
-                        s.shutdown_fusion()
-                        s.conv_to_lin_acc()
-                    #if for -d c4 shutdown raw data collection 
-                    else:
-                        s.shutdown_raw()
-                        s.conv_to_lin_acc(correct=True)
+                    if s.mac =="C7":
+                        #if for -d c7 shutdown mbient fusion
+                        if C7 == "mfus":
+                            s.shutdown_fusion()
+                            s.conv_to_lin_acc()
+                        #if for -d c4 shutdown raw data collection 
+                        else:
+                            s.shutdown_raw()
+                            s.conv_to_lin_acc(correct=True)
 
-                    if args.s is not None:
-                        s.save_lin_acc(args.s[i])
+                        if args.s is not None:
+                            s.save_lin_acc(args.s[i])
 
 
-    if args.l is not None:
-        for file_name in args.l:
-            states.append(State(None, file_name))
+        if args.l is not None:
+            for file_name in args.l:
+                states.append(State(None, file_name))
 
-    for s in states:
-        s.calc_vel()
-        s.calc_pos()
-        np.set_printoptions(suppress=True, precision=3)
-        print(s.lin_acc)
-        print(s.vel)
-        print(s.pos)
+        for s in states:
+            s.calc_vel()
+            s.calc_pos()
+            np.set_printoptions(suppress=True, precision=3)
+            print(s.lin_acc)
+            print(s.vel)
+            print(s.pos)
+
+        raw_input("Pres Enter to redo test without having to reconnect")
 
 
 class State():
