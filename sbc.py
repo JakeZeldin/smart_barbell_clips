@@ -1,5 +1,5 @@
-# from mbientlab.metawear import MetaWear, libmetawear, parse_value
-# from mbientlab.metawear.cbindings import *
+from mbientlab.metawear import MetaWear, libmetawear, parse_value
+from mbientlab.metawear.cbindings import *
 
 import time
 import matplotlib.pyplot as plt
@@ -11,8 +11,8 @@ import csv
 import os
 
 # for orienting in global frame
-# from ahrs.filters import Madgwick
-# from ahrs import Quaternion
+from ahrs.filters import Madgwick
+from ahrs import Quaternion
 
 
 def main():
@@ -58,7 +58,7 @@ def main():
     args = parser.parse_args()
 
     if args.l is None and args.r is None:
-        print("Nothing to do")
+        print("Sensors not activated, and no file loaded")
         return
     
     if args.r and len(args.r) != 2 and args.d is not None:
