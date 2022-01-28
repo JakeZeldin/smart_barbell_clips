@@ -52,11 +52,13 @@ def main():
             help="time in T seconds to record for, default 5")
 
     # parser.add_argument("-z", "--zupt")
-    
+   
+    parser.add_argument("-e", type=str, help="after the acceleration has been found, apply an error correction method. Options are butter, new, ...")
+
     args = parser.parse_args()
 
     if args.l is None and args.r is None:
-        print("Nothing to do")
+        print("Sensors not activated, and no file loaded")
         return
     
     if args.r and len(args.r) != 2 and args.d is not None:
@@ -177,9 +179,20 @@ def main():
     	for file_name in args.l:
             states.append(State(None, file_name))
 
+    
+    #data is now found as acceleration  
     for s in states:
-        s.calc_vel()
-        s.calc_pos()
+        if args.e is not None:
+            method = args.e
+            print("Method selected for error correction: ",method)
+            # error correction methods will take in acceleration, then store acc, vel, and pos
+            # in s.lin_acc, s.vel, s.pos, respectively 
+            s.error_correction(method)
+        else:
+            s.calc_vel()
+            s.calc_pos()
+            
+        #printing time
         np.set_printoptions(suppress=True, precision=3)
         #print(s.lin_acc)
         #print(s.vel)
@@ -390,6 +403,18 @@ class State():
         self.pos = scipy.integrate.cumulative_trapezoid(self.vel, 
                 axis=0, dx=0.01)
 
+
+    def error_correction(self, method):
+        # this is where new error correction methods are implemented    
+         if method == "new":
+            print("new error correction method")
+            return
+         elif method == "butter":
+            print("buttery method for error correction")
+            return
+         else:
+            print("invalid method for error correction")
+            return
 
     def plot(self, data, title, units):
         if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
