@@ -192,14 +192,6 @@ def main():
             
         #printing time
         np.set_printoptions(suppress=True, precision=3)
-<<<<<<< HEAD
-        print("Acceleration: ")
-        # print(s.lin_acc)
-        print("\nVelocity: ")
-        # print(s.vel)
-        print("\nPosition: ")
-        # print(s.pos)
-=======
         #print(s.lin_acc)
         #print(s.vel)
         #print(s.pos) 
@@ -229,7 +221,6 @@ def main():
                     s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
                 if axis == 'yz':
                     s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
->>>>>>> main
 
 
 class State():
