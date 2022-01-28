@@ -1,5 +1,5 @@
-from mbientlab.metawear import MetaWear, libmetawear, parse_value
-from mbientlab.metawear.cbindings import *
+# from mbientlab.metawear import MetaWear, libmetawear, parse_value
+# from mbientlab.metawear.cbindings import *
 
 import time
 import matplotlib.pyplot as plt
@@ -11,8 +11,8 @@ import csv
 import os
 
 # for orienting in global frame
-from ahrs.filters import Madgwick
-from ahrs import Quaternion
+# from ahrs.filters import Madgwick
+# from ahrs import Quaternion
 
 
 def main():
@@ -184,7 +184,9 @@ def main():
     for s in states:
         if args.e is not None:
             method = args.e
-            print(method)
+            print("Method selected for error correction: ",method)
+            # error correction methods will take in acceleration, then store acc, vel, and pos
+            # in s.lin_acc, s.vel, s.pos, respectively 
             s.error_correction(method)
         else:
             s.calc_vel()
@@ -402,9 +404,10 @@ class State():
                 axis=0, dx=0.01)
 
 
-    def error_correction(self, method):    
+    def error_correction(self, method):
+        # this is where new error correction methods are implemented    
          if method == "new":
-            print("new error correction method selected")
+            print("new error correction method")
             return
          elif method == "butter":
             print("buttery method for error correction")
