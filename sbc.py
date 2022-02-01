@@ -194,8 +194,11 @@ def main():
             
         #printing time
         np.set_printoptions(suppress=True, precision=3)
+        # print("\naccel:")
         #print(s.lin_acc)
+        # print("\nvel:")
         #print(s.vel)
+        # print("\npos:")
         #print(s.pos) 
         if args.a is not None:
             for axis in args.a:
