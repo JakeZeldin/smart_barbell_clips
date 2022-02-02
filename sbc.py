@@ -228,7 +228,7 @@ def main():
                     continue_var= continue_var + 1
                     redo = 0
                 elif (user_input == "N"):
-                    continue_var = continue_var + 1
+                    continue_var = 0
                     redo = 0
                 else:
                     print("Unknown user entry redo")
