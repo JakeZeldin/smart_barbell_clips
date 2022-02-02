@@ -25,7 +25,7 @@ def main():
 
     parser.add_argument("-s", nargs='+',
             help="save recording or loaded data to .data/CSV",
-            metavar="CSV")
+            metavar="FILESTRING")
     parser.add_argument("-l", nargs='+',
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
@@ -96,133 +96,146 @@ def main():
             device = MetaWear(mac)
             device.connect()
             states.append(State(device,None,mac[:2]))
+
+        #Used for completing multiple data collections at a time 
+        continue_var = 1
         
-        if args.d is not True:
-            for s in states:
-                if args.f:
-                    s.start_fusion()
-                else:
-                    s.start_raw()
-        else:
-            for s in states:
-                if s.mac == "C4":
-                    #if for -d c4 to perform mbient fusion
-                    if C4 == "mfus":
+        while(continue_var>=1):
+
+            if args.d is not True:
+                for s in states:
+                    if args.f:
                         s.start_fusion()
-                        print("C4 doing mbient fusion")
-                    #if for -d c7 to pergorm will fusion 
                     else:
                         s.start_raw()
-                        print("C4 doing will fusion")
-                else:
-                    #if for -d c7 to perform mbient fusion
-                    if C7 == "mfus":
-                        s.start_fusion()
-                        print("C7 doing mbient fusion")
-                    #if for -d c7 to perform will fusion
+            else:
+                for s in states:
+                    if s.mac == "C4":
+                        #if for -d c4 to perform mbient fusion
+                        if C4 == "mfus":
+                            s.start_fusion()
+                        #if for -d c7 to pergorm will fusion 
+                        else:
+                            s.start_raw()
                     else:
-                        s.start_raw()
-                        print("C7 doing will fusion")
+                        #if for -d c7 to perform mbient fusion
+                        if C7 == "mfus":
+                            s.start_fusion()
+                        #if for -d c7 to perform will fusion
+                        else:
+                            s.start_raw()
 
-        time.sleep(args.t)
+            time.sleep(args.t)
         
-        if args.d is not True:
-            for i,s in enumerate(states):
-                if args.f:
-                    s.shutdown_fusion()
-                else:
-                    s.shutdown_raw()
-
-                if args.c and not args.f:
-                    s.conv_to_lin_acc(correct=True)
-                else:
-                    s.conv_to_lin_acc()
-
-                if args.s is not None:
-                    s.save_lin_acc(args.s[i])
-        else:
-            for i,s in enumerate(states):
-                if s.mac == "C4":
-                    #if for -d c4 shutdown mbient fusion
-                    if C4 == "mfus":
-                        print("C4 shut down mbient fusion")
+        
+            if args.d is not True:
+                for i,s in enumerate(states):
+                    if args.f:
                         s.shutdown_fusion()
-                        s.conv_to_lin_acc()
-                    #if dor -d c4 shutdown raw data collection
                     else:
-                        print("C4 shut down will fusion")
                         s.shutdown_raw()
-                        s.conv_to_lin_acc(correct=False)
+
+                    if args.c and not args.f:
+                        s.conv_to_lin_acc(correct=True)
+                    else:
+                        s.conv_to_lin_acc()
+
+                    if args.s is not None:
+                        s.save_lin_acc(args.s[i], continue_var)
+            else:
+                for i,s in enumerate(states):
+                    if s.mac == "C4":
+                        #if for -d c4 shutdown mbient fusion
+                        if C4 == "mfus":
+                            s.shutdown_fusion()
+                            s.conv_to_lin_acc()
+                        #if for -d c4 shutdown raw data collection
+                        else:
+                            s.shutdown_raw()
+                            s.conv_to_lin_acc(correct=True)
                     
-                    if args.s is not None:
-                        print("C4 saving to " + args.s[i])
-                        s.save_lin_acc(args.s[i])
+                        if args.s is not None:
+                            s.save_lin_acc(args.s[i], continue_var)
 
-                if s.mac =="C7":
-                    #if for -d c7 shutdown mbient fusion
-                    if C7 == "mfus":
-                        print("C7 shut down mbient fusion")
-                        s.shutdown_fusion()
-                        s.conv_to_lin_acc()
-                    #if for -d c4 shutdown raw data collection 
-                    else:
-                        print("C7 shut down will fusion")
-                        s.shutdown_raw()
-                        s.conv_to_lin_acc(correct=False)
+                    if s.mac =="C7":
+                        #if for -d c7 shutdown mbient fusion
+                        if C7 == "mfus":
+                            s.shutdown_fusion()
+                            s.conv_to_lin_acc()
+                        #if for -d c4 shutdown raw data collection 
+                        else:
+                            s.shutdown_raw()
+                            s.conv_to_lin_acc(correct=True)
 
-                    if args.s is not None:
-                        print("C7 saving to " + args.s[i] )
-                        s.save_lin_acc(args.s[i])
+                        if args.s is not None:
+                            s.save_lin_acc(args.s[i], continue_var)
 
-
-    if args.l is not None:
-    	for file_name in args.l:
-            states.append(State(None, file_name))
+            if args.l is not None:
+    	        for file_name in args.l:
+                    states.append(State(None, file_name))
 
     
-    #data is now found as acceleration  
-    for s in states:
-        if args.e is not None:
-            method = args.e
-            print("Method selected for error correction: ",method)
-            # error correction methods will take in acceleration, then store acc, vel, and pos
-            # in s.lin_acc, s.vel, s.pos, respectively 
-            s.error_correction(method)
-        else:
-            s.calc_vel()
-            s.calc_pos()
+            #data is now found as acceleration  
+            for s in states:
+                if args.e is not None:
+                    method = args.e
+                    print("Method selected for error correction: ",method)
+                    # error correction methods will take in acceleration, then store acc, vel, and pos
+                    # in s.lin_acc, s.vel, s.pos, respectively 
+                    s.error_correction(method)
+                else:
+                    s.calc_vel()
+                    s.calc_pos()
             
-        #printing time
-        np.set_printoptions(suppress=True, precision=3)
-        #print(s.lin_acc)
-        #print(s.vel)
-        #print(s.pos) 
-        if args.a is not None:
-            for axis in args.a:
-                if axis == 'x':
-                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'NOT SURE')
-                if axis == 'y':
-                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'NOT SURE')
-                if axis == 'z':
-                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'NOT SURE')	
-        if args.v is not None:
-            for axis in args.v:
-                if axis == 'x':
-                    s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
-                if axis == 'y':
-                    s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
-                if axis == 'z':
-                    s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
-        if args.p is not None:
-            for axis in args.p:
-                if axis == 'x':
-                    s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
-                if axis == 'y':
-                    s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
-                if axis == 'z':
-                    s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
-                if axis == 'yz':
-                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
+                #printing time
+                np.set_printoptions(suppress=True, precision=3)
+                #print(s.lin_acc)
+                #print(s.vel)
+                #print(s.pos) 
+                if args.a is not None:
+                    for axis in args.a:
+                        if axis == 'x':
+                            s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'NOT SURE')
+                        if axis == 'y':
+                            s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'NOT SURE')
+                        if axis == 'z':
+                            s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'NOT SURE')	
+                if args.v is not None:
+                    for axis in args.v:
+                        if axis == 'x':
+                            s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
+                        if axis == 'y':
+                            s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
+                        if axis == 'z':
+                            s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
+                if args.p is not None:
+                    for axis in args.p:
+                        if axis == 'x':
+                            s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
+                        if axis == 'y':
+                            s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
+                        if axis == 'z':
+                            s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
+                        if axis == 'yz':
+                            s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
+        
+
+            redo = 1
+            while (redo):
+                user_input = input("Enter Y to rerun code again and N to disconnect")
+        
+                if (user_input == "Y"):
+                    continue_var= continue_var + 1
+                    redo = 0
+                elif (user_input == "N"):
+                    continue_var = continue_var + 1
+                    redo = 0
+                else:
+                    print("Unknown user entry redo")
+                    redo = 1
+
+        for s in states:
+            s.disconnect_sensor()
 
 
 class State():
@@ -340,9 +353,10 @@ class State():
         gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
         libmetawear.mbl_mw_datasignal_unsubscribe(gyro)
         
-        # disconnect
-        libmetawear.mbl_mw_debug_disconnect(self.device.board)
 
+    def disconnect_sensor(self):
+
+            libmetwear.mbl_mw_debug_disconnect(self.device.board)
 
     def acc_data_handler (self, ctx, data):
         d = parse_value(data)
@@ -378,14 +392,14 @@ class State():
         self.lin_acc = np.array(lin_acc)
 
 
-    def save_lin_acc(self, filename):
+    def save_lin_acc(self, filename, file_number):
         try:
             os.makedirs(".data")
         except OSError:
             pass # data dir already exists
 
         try:
-            with open(os.path.join(".data", filename), 'w') as f:
+            with open(os.path.join(".data", filename + file_number + ".csv"), 'w') as f:
                 writer = csv.writer(f)
                 for row in self.lin_acc:
                     writer.writerow([str(r) for r in row])
