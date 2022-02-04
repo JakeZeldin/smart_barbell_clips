@@ -4,7 +4,7 @@ import os
 #Change file name here
 file_name = '220131-213734_backsquat.csv'
 
-df = pd.read_csv(f'CV_Lifts/{file_name}', usecols=['Time', 'X_m', 'Y_m'])
+df = pd.read_csv(f'CV_lifts/{file_name}', usecols=['Time', 'X_m', 'Y_m'])
 
 #Set delta to be change threshold in Y dir used to start a lift
 maxVal = 0
