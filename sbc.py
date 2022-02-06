@@ -200,11 +200,11 @@ def main():
                 if args.a is not None:
                     for axis in args.a:
                         if axis == 'x':
-                            s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'NOT SURE')
+                            s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'meters/second^2')
                         if axis == 'y':
-                            s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'NOT SURE')
+                            s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'meters/second')
                         if axis == 'z':
-                            s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'NOT SURE')	
+                            s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'meters')	
                 if args.v is not None:
                     for axis in args.v:
                         if axis == 'x':
