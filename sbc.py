@@ -187,30 +187,31 @@ def main():
     #data is now found as acceleration
   
     for s in states:
-        print("\naccel before error correction:")
-        print(s.lin_acc)
-        print(len(s.lin_acc))
+        # print("\naccel before error correction:")
+        # print(s.lin_acc)
+        # print(len(s.lin_acc))
         if args.e is not None:
             method = args.e
             print("Method selected for error correction: ",method)
             # error correction methods will take in acceleration, then store acc, vel, and pos
-            # in s.lin_acc, s.vel, s.pos, respectively 
+            # in s.accCorrected, s.velCorrected, s.posCorrected, respectively 
             s.error_correction(method)
-        #else:
-            # s.calc_vel()
-            # s.calc_pos()
+        else:
+            s.calc_vel()
+            s.calc_pos()
             
         #printing time
         np.set_printoptions(suppress=True, precision=3)
-        print("\naccel:")
-        print(s.lin_acc)
-        print(len(s.lin_acc))
-        print("\nvel:")
-        print(s.vel)
-        print(len(s.vel))
-        print("\npos:")
-        print(s.pos)
-        print(len(s.pos)) 
+        for i in range(len(s.lin_acc)):
+            print(s.lin_acc[i])
+            print(s.accCorrected[i])
+            print("\n")
+        # print("\nvel:")
+        # print(s.vel)
+        # print(len(s.vel))
+        # print("\npos:")
+        # print(s.pos)
+        # print(len(s.pos)) 
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
@@ -266,6 +267,10 @@ class State():
 
         self.vel = []
         self.pos = []
+
+        self.accCorrected = []
+        self.velCorrected = []
+        self.posCorrected = []
 
         # self.acc_callback = FnVoid_VoidP_DataP(self.acc_data_handler)
         # self.gyr_callback = FnVoid_VoidP_DataP(self.gyr_data_handler)
@@ -409,12 +414,12 @@ class State():
 
 
     def calc_vel(self):
-        self.vel = scipy.integrate.cumulative_trapezoid(self.lin_acc, 
+        self.velBasic = scipy.integrate.cumulative_trapezoid(self.lin_acc, 
                 axis=0, dx=0.01)
 
 
     def calc_pos(self):
-        self.pos = scipy.integrate.cumulative_trapezoid(self.vel, 
+        self.posBasic = scipy.integrate.cumulative_trapezoid(self.vel, 
                 axis=0, dx=0.01)
 
 
@@ -474,7 +479,10 @@ class State():
                     acc_y[i] = 0.00
                 if (abs(acc_z[i]) < zAccThresh):
                     acc_z[i] = 0.00
-                
+
+            for i in range(len(acc_z)):
+                self.accCorrected.append([acc_x[i],acc_y[i],acc_z[i]])
+
             #acceleration done, now print it
             # print("\n\n\nacceleration: ")
             # for i in range(len(acc_z)): 
@@ -499,7 +507,6 @@ class State():
                         vel_y[i] = 0
                         vel_z[i] = 0
             
-            print("HERERE", len(vel_x))
             vel_xBasic = scipy.integrate.cumulative_trapezoid(acc_x)
             vel_yBasic = scipy.integrate.cumulative_trapezoid(acc_y)
             vel_zBasic = scipy.integrate.cumulative_trapezoid(acc_z)
@@ -560,12 +567,10 @@ class State():
                 vel_y[i] = vel_y[i] - vel_drift_y[i]
                 vel_z[i] = vel_z[i] - vel_drift_z[i]
             
-            print("herer",len(vel_z))
 
             for i in range(len(vel_z)):
-                self.vel.append([vel_x[i],vel_y[i],vel_z[i]])
+                self.velCorrected.append([vel_x[i],vel_y[i],vel_z[i]])
             
-            print(len(self.vel))
             #velocity done, now print it
             # print("\n\n\nvelocity: ")
             # for i in range(len(vel_z)): 
@@ -584,14 +589,16 @@ class State():
                 pos_x.append(pos_x[i-1] + vel_x[i]*0.01)
                 pos_y.append(pos_y[i-1] + vel_y[i]*0.01)
                 pos_z.append(pos_z[i-1] + vel_z[i]*0.01)
-            
 
-            for i in range(len(pos_z)):
-                self.pos.append([pos_x[i],pos_y[i],pos_z[i]])
             
             pos_xBasic = scipy.integrate.cumulative_trapezoid(vel_x)
             pos_yBasic = scipy.integrate.cumulative_trapezoid(vel_y)
             pos_zBasic = scipy.integrate.cumulative_trapezoid(vel_z)
+            
+            for i in range(len(pos_z)):
+                self.posCorrected.append([pos_x[i],pos_y[i],pos_z[i]])
+            
+
             
             return
          else:
