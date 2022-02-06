@@ -50,6 +50,8 @@ def main():
             "non-proprietary sensor fusion. Has no effect on mbient fusion")
     parser.add_argument("-t", default='5', type=int,
             help="time in T seconds to record for, default 5")
+    parser.add_argument("-n", type=int,
+            help="number of recordings") 
 
     # parser.add_argument("-z", "--zupt")
    
@@ -61,7 +63,7 @@ def main():
         print("Sensors not activated, and no file loaded")
         return
     
-    if args.r and len(args.r) != 2 and args.d is not None:
+    if args.r and len(args.r) != 2 and args.d:
         print("-d selected but not 2 sensors entered")
         return 
 
@@ -98,7 +100,10 @@ def main():
             states.append(State(device,None,mac[:2]))
 
         #Used for completing multiple data collections at a time 
-        continue_var = 1
+        if args.n:
+            continue_var = args.n
+        else:
+            continue_var = 1
         
         while(continue_var>=1):
 
@@ -220,19 +225,22 @@ def main():
                             s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
         
 
-            redo = 1
-            while (redo):
-                user_input = input("Enter Y to rerun code again and N to disconnect")
-        
-                if (user_input == "Y"):
-                    continue_var= continue_var + 1
-                    redo = 0
-                elif (user_input == "N"):
-                    continue_var = 0
-                    redo = 0
-                else:
-                    print("Unknown user entry redo")
-                    redo = 1
+            if not args.n:
+                redo = 1
+                while (redo):
+                    user_input = input("Enter Y to rerun code again and N to disconnect")
+            
+                    if (user_input == "Y"):
+                        continue_var= continue_var + 1
+                        redo = 0
+                    elif (user_input == "N"):
+                        continue_var = 0
+                        redo = 0
+                    else:
+                        print("Unknown user entry redo")
+                        redo = 1
+            else:
+                continue_var -= 1
 
         for s in states:
             s.disconnect_sensor()
@@ -355,8 +363,7 @@ class State():
         
 
     def disconnect_sensor(self):
-
-            libmetwear.mbl_mw_debug_disconnect(self.device.board)
+        libmetawear.mbl_mw_debug_disconnect(self.device.board)
 
     def acc_data_handler (self, ctx, data):
         d = parse_value(data)
@@ -399,7 +406,7 @@ class State():
             pass # data dir already exists
 
         try:
-            with open(os.path.join(".data", filename + file_number + ".csv"), 'w') as f:
+            with open(os.path.join(".data", filename + str(file_number) + ".csv"), 'w') as f:
                 writer = csv.writer(f)
                 for row in self.lin_acc:
                     writer.writerow([str(r) for r in row])
