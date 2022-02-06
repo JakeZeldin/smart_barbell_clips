@@ -174,6 +174,14 @@ def main():
 
                         if args.s is not None:
                             s.save_lin_acc(args.s[i], continue_var)
+            
+            for s in states:
+                s.calmean()
+                s.start_fusion()
+                time.sleep(args.t)
+                s,shutdown_fusion()
+                s.conv_to_lin_acc()
+
 
             if args.l is not None:
     	        for file_name in args.l:
@@ -253,6 +261,7 @@ class State():
         self.gyr = []
         self.mac = mac
         self.filename = filename
+        self.means = []
 
         if filename is None:
             self.lin_acc = None 
@@ -268,6 +277,7 @@ class State():
             reader = csv.reader(f)
             for row in reader:
                 lin_acc.append([float(x) for x in row])
+                
             self.lin_acc = np.array(lin_acc)
             f.close()
 
@@ -281,6 +291,10 @@ class State():
         self.signal_gyr = None
         self.signal_fus = None
 
+
+    def calmean(self):
+        means = ([np.mean(self.acc[:,i]) for i in range(3)])
+        
 
     def start_fusion(self):
 
@@ -378,7 +392,10 @@ class State():
     def conv_to_lin_acc(self, correct=False):
         # convert acc to lin_acc and return
         if not correct:
-            self.lin_acc = np.array(self.acc)
+            if len(self.mean) == 0:
+                self.lin_acc = np.array(self.acc)
+            else:
+                self.lin_acc = np.array(self.acc-means)
             return
             
         min_len = min(len(self.acc), len(self.gyr))
