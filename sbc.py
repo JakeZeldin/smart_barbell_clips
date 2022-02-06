@@ -191,27 +191,47 @@ def main():
         # print(s.lin_acc)
         # print(len(s.lin_acc))
         if args.e is not None:
-            method = args.e
-            print("Method selected for error correction: ",method)
+            s.method = args.e
+            print("Method selected for error correction: ",s.method)
             # error correction methods will take in acceleration, then store acc, vel, and pos
             # in s.accCorrected, s.velCorrected, s.posCorrected, respectively 
-            s.error_correction(method)
+            s.calc_vel()
+            s.calc_pos()
+            s.error_correction(s.method)
+
         else:
             s.calc_vel()
             s.calc_pos()
             
         #printing time
         np.set_printoptions(suppress=True, precision=3)
-        for i in range(len(s.lin_acc)):
-            print(s.lin_acc[i])
-            print(s.accCorrected[i])
-            print("\n")
-        # print("\nvel:")
-        # print(s.vel)
+        
+        # print("acceleration:")
+        # print(len(s.lin_acc))
+        # for i in range(len(s.lin_acc)):
+        #     print(s.lin_acc[i])
+        #     print(s.accCorrected[i])
+        #     print("\n")
+        
+        # print("\n\nvelocity:")
         # print(len(s.vel))
-        # print("\npos:")
-        # print(s.pos)
-        # print(len(s.pos)) 
+        # for i in range(len(s.vel)):
+        #     print(s.vel[i])
+        #     print(s.velCorrected[i])
+        #     print("\n")
+        
+        # print("\n\nposition:")
+        # print(len(s.pos))
+        # for i in range(len(s.pos)):
+        #     print(s.pos[i])
+        #     print(s.posCorrected[i])
+        #     print("\n")
+        
+        if args.e is not  None:
+            s.lin_acc = s.accCorrected
+            s.vel = s.velCorrected
+            s.pos_acc = s.posCorrected
+        
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
@@ -237,7 +257,7 @@ def main():
                 if axis == 'z':
                     s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
                 if axis == 'yz':
-                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
+                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename} - {s.method}''', 'NOT SURE')
 
 
 class State():
@@ -247,6 +267,7 @@ class State():
         self.gyr = []
         self.mac = mac
         self.filename = filename
+        self.method = "NoCorrection"
 
         if filename is None:
             self.lin_acc = None 
@@ -414,12 +435,12 @@ class State():
 
 
     def calc_vel(self):
-        self.velBasic = scipy.integrate.cumulative_trapezoid(self.lin_acc, 
+        self.vel = scipy.integrate.cumulative_trapezoid(self.lin_acc, 
                 axis=0, dx=0.01)
 
 
     def calc_pos(self):
-        self.posBasic = scipy.integrate.cumulative_trapezoid(self.vel, 
+        self.pos = scipy.integrate.cumulative_trapezoid(self.vel, 
                 axis=0, dx=0.01)
 
 
@@ -483,6 +504,7 @@ class State():
             for i in range(len(acc_z)):
                 self.accCorrected.append([acc_x[i],acc_y[i],acc_z[i]])
 
+            self.accCorrected = np.array(self.accCorrected)
             #acceleration done, now print it
             # print("\n\n\nacceleration: ")
             # for i in range(len(acc_z)): 
@@ -571,6 +593,7 @@ class State():
             for i in range(len(vel_z)):
                 self.velCorrected.append([vel_x[i],vel_y[i],vel_z[i]])
             
+            self.velCorrected = np.array(self.velCorrected)
             #velocity done, now print it
             # print("\n\n\nvelocity: ")
             # for i in range(len(vel_z)): 
@@ -598,6 +621,7 @@ class State():
             for i in range(len(pos_z)):
                 self.posCorrected.append([pos_x[i],pos_y[i],pos_z[i]])
             
+            self.posCorrected = np.array(self.posCorrected)
 
             
             return
