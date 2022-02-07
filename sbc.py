@@ -177,6 +177,8 @@ def main():
             
             for s in states:
                 s.calmean()
+                print(s.means)
+                time.sleep(1000)
                 s.start_fusion()
                 time.sleep(args.t)
                 s,shutdown_fusion()
@@ -261,7 +263,7 @@ class State():
         self.gyr = []
         self.mac = mac
         self.filename = filename
-        self.means = []
+        self.means = [3]
 
         if filename is None:
             self.lin_acc = None 
@@ -293,7 +295,10 @@ class State():
 
 
     def calmean(self):
-        means = ([np.mean(self.acc[:,i]) for i in range(3)])
+        for i in range(3):
+            self.means = np.array(self.means)
+            self.means[i] = (np.mean(self.acc[:,i]))
+        
         
 
     def start_fusion(self):
@@ -392,10 +397,14 @@ class State():
     def conv_to_lin_acc(self, correct=False):
         # convert acc to lin_acc and return
         if not correct:
-            if len(self.mean) == 0:
+            if len(self.means) == 0:
                 self.lin_acc = np.array(self.acc)
             else:
-                self.lin_acc = np.array(self.acc-means)
+                x_means = np.full(shape=self.acc.len[0], fill_value=self.means[0], dtype=np.float)
+                y_means = np.full(shape=self.acc.len[0], fill_value=self.means[1], dtype=np.float)
+                z_means = np.full(shape=self.acc.len[0], fill_value=self.means[2], dtype=np.float)
+                means_array = np.array([x_means, y_means,z_means], np.float)
+                self.lin_acc = np.subtract(self.acc, means_array).transpose()
             return
             
         min_len = min(len(self.acc), len(self.gyr))
