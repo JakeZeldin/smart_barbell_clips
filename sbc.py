@@ -77,112 +77,6 @@ def main():
     C7 = None 
     C4 = None
 
-<<<<<<< HEAD
-    # if args.r is not None:
-    #     macs = []
-    #     #counter used to see what sensor was entered first for when -d flag set
-    #     counter = 0;
-    #     for mac in args.r:
-    #         if mac == "C7":
-    #             macs.append("C7:EA:21:57:F5:E2")
-    #             if args.d is True:
-    #                 if counter == 0:
-    #                     #c7 to perform mbient fusion c4 to perform will fusion
-    #                     C7 = "mfus"
-    #                     C4 = "wfus"
-    #                 else:
-    #                     #c7 to perform will fusion c4 to perform mbient fusion
-    #                     C7 = "wfus"
-    #                     C4 = "mfus"
-
-    #         elif mac == "C4":
-    #             macs.append("C4:A3:A4:75:A2:86")
-    #             counter = 1
-
-    #     for mac in macs:
-    #         device = MetaWear(mac)
-    #         device.connect()
-    #         states.append(State(device,None,mac[:2]))
-        
-    #     if args.d is not True:
-    #         for s in states:
-    #             if args.f:
-    #                 s.start_fusion()
-    #             else:
-    #                 s.start_raw()
-    #     else:
-    #         for s in states:
-    #             if s.mac == "C4":
-    #                 #if for -d c4 to perform mbient fusion
-    #                 if C4 == "mfus":
-    #                     s.start_fusion()
-    #                     print("C4 doing mbient fusion")
-    #                 #if for -d c7 to pergorm will fusion 
-    #                 else:
-    #                     s.start_raw()
-    #                     print("C4 doing will fusion")
-    #             else:
-    #                 #if for -d c7 to perform mbient fusion
-    #                 if C7 == "mfus":
-    #                     s.start_fusion()
-    #                     print("C7 doing mbient fusion")
-    #                 #if for -d c7 to perform will fusion
-    #                 else:
-    #                     s.start_raw()
-    #                     print("C7 doing will fusion")
-
-    #     time.sleep(args.t)
-        
-    #     if args.d is not True:
-    #         for i,s in enumerate(states):
-    #             if args.f:
-    #                 s.shutdown_fusion()
-    #             else:
-    #                 s.shutdown_raw()
-
-    #             if args.c and not args.f:
-    #                 s.conv_to_lin_acc(correct=True)
-    #             else:
-    #                 s.conv_to_lin_acc()
-
-    #             if args.s is not None:
-    #                 s.save_lin_acc(args.s[i])
-    #     else:
-    #         for i,s in enumerate(states):
-    #             if s.mac == "C4":
-    #                 #if for -d c4 shutdown mbient fusion
-    #                 if C4 == "mfus":
-    #                     print("C4 shut down mbient fusion")
-    #                     s.shutdown_fusion()
-    #                     s.conv_to_lin_acc()
-    #                 #if dor -d c4 shutdown raw data collection
-    #                 else:
-    #                     print("C4 shut down will fusion")
-    #                     s.shutdown_raw()
-    #                     s.conv_to_lin_acc(correct=False)
-                    
-    #                 if args.s is not None:
-    #                     print("C4 saving to " + args.s[i])
-    #                     s.save_lin_acc(args.s[i])
-
-    #             if s.mac =="C7":
-    #                 #if for -d c7 shutdown mbient fusion
-    #                 if C7 == "mfus":
-    #                     print("C7 shut down mbient fusion")
-    #                     s.shutdown_fusion()
-    #                     s.conv_to_lin_acc()
-    #                 #if for -d c4 shutdown raw data collection 
-    #                 else:
-    #                     print("C7 shut down will fusion")
-    #                     s.shutdown_raw()
-    #                     s.conv_to_lin_acc(correct=False)
-
-    #                 if args.s is not None:
-    #                     print("C7 saving to " + args.s[i] )
-    #                     s.save_lin_acc(args.s[i])
-
-
-=======
     if args.r is not None:
         macs = []
         #counter used to see what sensor was entered first for when -d flag set
@@ -304,18 +198,11 @@ def main():
         for s in states:
             s.disconnect_sensor()
             
->>>>>>> main
     if args.l is not None:
             for file_name in args.l:
                 states.append(State(None, file_name))
 
-<<<<<<< HEAD
-    
-    #data is now found as acceleration
-  
-=======
     #data is now found as acceleration  
->>>>>>> main
     for s in states:
         # print("\naccel before error correction:")
         # print(s.lin_acc)
@@ -387,12 +274,7 @@ def main():
                 if axis == 'z':
                     s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
                 if axis == 'yz':
-<<<<<<< HEAD
                     s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename} - {s.method}''', 'NOT SURE')
-=======
-                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
-        
->>>>>>> main
 
 
 class State():
@@ -515,11 +397,6 @@ class State():
     #     gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
     #     libmetawear.mbl_mw_datasignal_unsubscribe(gyro)
         
-<<<<<<< HEAD
-    #     # disconnect
-    #     libmetawear.mbl_mw_debug_disconnect(self.device.board)
-=======
->>>>>>> main
 
     def disconnect_sensor(self):
         libmetawear.mbl_mw_debug_disconnect(self.device.board)
