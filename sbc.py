@@ -175,56 +175,6 @@ def main():
                         if args.s is not None:
                             s.save_lin_acc(args.s[i], continue_var)
 
-            if args.l is not None:
-    	        for file_name in args.l:
-                    states.append(State(None, file_name))
-
-    
-            #data is now found as acceleration  
-            for s in states:
-                if args.e is not None:
-                    method = args.e
-                    print("Method selected for error correction: ",method)
-                    # error correction methods will take in acceleration, then store acc, vel, and pos
-                    # in s.lin_acc, s.vel, s.pos, respectively 
-                    s.error_correction(method)
-                else:
-                    s.calc_vel()
-                    s.calc_pos()
-            
-                #printing time
-                np.set_printoptions(suppress=True, precision=3)
-                #print(s.lin_acc)
-                #print(s.vel)
-                #print(s.pos) 
-                if args.a is not None:
-                    for axis in args.a:
-                        if axis == 'x':
-                            s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'meters/second^2')
-                        if axis == 'y':
-                            s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'meters/second')
-                        if axis == 'z':
-                            s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'meters')	
-                if args.v is not None:
-                    for axis in args.v:
-                        if axis == 'x':
-                            s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
-                        if axis == 'y':
-                            s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
-                        if axis == 'z':
-                            s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
-                if args.p is not None:
-                    for axis in args.p:
-                        if axis == 'x':
-                            s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
-                        if axis == 'y':
-                            s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
-                        if axis == 'z':
-                            s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
-                        if axis == 'yz':
-                            s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
-        
-
             if not args.n:
                 redo = 1
                 while (redo):
@@ -241,7 +191,55 @@ def main():
                         redo = 1
             else:
                 continue_var -= 1
+        
+        if args.l is not None:
+    	        for file_name in args.l:
+                    states.append(State(None, file_name))
 
+
+        #data is now found as acceleration  
+        for s in states:
+            if args.e is not None:
+                method = args.e
+                print("Method selected for error correction: ",method)
+                # error correction methods will take in acceleration, then store acc, vel, and pos
+                # in s.lin_acc, s.vel, s.pos, respectively 
+                s.error_correction(method)
+            else:
+                s.calc_vel()
+                s.calc_pos()
+
+            #printing time
+            np.set_printoptions(suppress=True, precision=3)
+            #print(s.lin_acc)
+            #print(s.vel)
+            #print(s.pos) 
+            if args.a is not None:
+                for axis in args.a:
+                    if axis == 'x':
+                        s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'meters/second^2')
+                    if axis == 'y':
+                        s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'meters/second')
+                    if axis == 'z':
+                        s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'meters')	
+            if args.v is not None:
+                for axis in args.v:
+                    if axis == 'x':
+                        s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
+                    if axis == 'y':
+                        s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
+                    if axis == 'z':
+                        s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
+            if args.p is not None:
+                for axis in args.p:
+                    if axis == 'x':
+                        s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
+                    if axis == 'y':
+                        s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
+                    if axis == 'z':
+                        s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
+                    if axis == 'yz':
+                        s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
         for s in states:
             s.disconnect_sensor()
 
