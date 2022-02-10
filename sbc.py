@@ -29,7 +29,7 @@ def main():
 
     parser.add_argument("-s", nargs='+',
             help="save recording or loaded data to .data/CSV",
-            metavar="CSV")
+            metavar="FILESTRING")
     parser.add_argument("-l", nargs='+',
             help="load linear acceleration from .data/CSV",
             metavar="CSV")
@@ -54,6 +54,8 @@ def main():
             "non-proprietary sensor fusion. Has no effect on mbient fusion")
     parser.add_argument("-t", default='5', type=int,
             help="time in T seconds to record for, default 5")
+    parser.add_argument("-n", type=int,
+            help="number of recordings") 
 
     # parser.add_argument("-z", "--zupt")
    
@@ -65,7 +67,7 @@ def main():
         print("Sensors not activated, and no file loaded")
         return
     
-    if args.r and len(args.r) != 2 and args.d is not None:
+    if args.r and len(args.r) != 2 and args.d:
         print("-d selected but not 2 sensors entered")
         return 
 
@@ -75,6 +77,7 @@ def main():
     C7 = None 
     C4 = None
 
+<<<<<<< HEAD
     # if args.r is not None:
     #     macs = []
     #     #counter used to see what sensor was entered first for when -d flag set
@@ -179,13 +182,140 @@ def main():
     #                     s.save_lin_acc(args.s[i])
 
 
-    if args.l is not None:
-    	for file_name in args.l:
-            states.append(State(None, file_name))
+=======
+    if args.r is not None:
+        macs = []
+        #counter used to see what sensor was entered first for when -d flag set
+        counter = 0;
+        for mac in args.r:
+            if mac == "C7":
+                macs.append("C7:EA:21:57:F5:E2")
+                if args.d is True:
+                    if counter == 0:
+                        #c7 to perform mbient fusion c4 to perform will fusion
+                        C7 = "mfus"
+                        C4 = "wfus"
+                    else:
+                        #c7 to perform will fusion c4 to perform mbient fusion
+                        C7 = "wfus"
+                        C4 = "mfus"
 
+            elif mac == "C4":
+                macs.append("C4:A3:A4:75:A2:86")
+                counter = 1
+
+        for mac in macs:
+            device = MetaWear(mac)
+            device.connect()
+            states.append(State(device,None,mac[:2]))
+
+        #Used for completing multiple data collections at a time 
+        if args.n:
+            continue_var = args.n
+        else:
+            continue_var = 1
+        
+        while(continue_var>=1):
+
+            if args.d is not True:
+                for s in states:
+                    if args.f:
+                        s.start_fusion()
+                    else:
+                        s.start_raw()
+            else:
+                for s in states:
+                    if s.mac == "C4":
+                        #if for -d c4 to perform mbient fusion
+                        if C4 == "mfus":
+                            s.start_fusion()
+                        #if for -d c7 to pergorm will fusion 
+                        else:
+                            s.start_raw()
+                    else:
+                        #if for -d c7 to perform mbient fusion
+                        if C7 == "mfus":
+                            s.start_fusion()
+                        #if for -d c7 to perform will fusion
+                        else:
+                            s.start_raw()
+
+            time.sleep(args.t)
+        
+        
+            if args.d is not True:
+                for i,s in enumerate(states):
+                    if args.f:
+                        s.shutdown_fusion()
+                    else:
+                        s.shutdown_raw()
+
+                    if args.c and not args.f:
+                        s.conv_to_lin_acc(correct=True)
+                    else:
+                        s.conv_to_lin_acc()
+
+                    if args.s is not None:
+                        s.save_lin_acc(args.s[i], continue_var)
+            else:
+                for i,s in enumerate(states):
+                    if s.mac == "C4":
+                        #if for -d c4 shutdown mbient fusion
+                        if C4 == "mfus":
+                            s.shutdown_fusion()
+                            s.conv_to_lin_acc()
+                        #if for -d c4 shutdown raw data collection
+                        else:
+                            s.shutdown_raw()
+                            s.conv_to_lin_acc(correct=True)
+                    
+                        if args.s is not None:
+                            s.save_lin_acc(args.s[i], continue_var)
+
+                    if s.mac =="C7":
+                        #if for -d c7 shutdown mbient fusion
+                        if C7 == "mfus":
+                            s.shutdown_fusion()
+                            s.conv_to_lin_acc()
+                        #if for -d c4 shutdown raw data collection 
+                        else:
+                            s.shutdown_raw()
+                            s.conv_to_lin_acc(correct=True)
+
+                        if args.s is not None:
+                            s.save_lin_acc(args.s[i], continue_var)
+
+            if not args.n:
+                redo = 1
+                while (redo):
+                    user_input = input("Enter Y to rerun code again and N to disconnect")
+            
+                    if (user_input == "Y"):
+                        continue_var= continue_var + 1
+                        redo = 0
+                    elif (user_input == "N"):
+                        continue_var = 0
+                        redo = 0
+                    else:
+                        print("Unknown user entry redo")
+                        redo = 1
+            else:
+                continue_var -= 1
+        for s in states:
+            s.disconnect_sensor()
+            
+>>>>>>> main
+    if args.l is not None:
+            for file_name in args.l:
+                states.append(State(None, file_name))
+
+<<<<<<< HEAD
     
     #data is now found as acceleration
   
+=======
+    #data is now found as acceleration  
+>>>>>>> main
     for s in states:
         # print("\naccel before error correction:")
         # print(s.lin_acc)
@@ -202,7 +332,7 @@ def main():
         else:
             s.calc_vel()
             s.calc_pos()
-            
+
         #printing time
         np.set_printoptions(suppress=True, precision=3)
         
@@ -235,11 +365,11 @@ def main():
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
-                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'NOT SURE')
+                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'meters/second^2')
                 if axis == 'y':
-                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'NOT SURE')
+                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'meters/second')
                 if axis == 'z':
-                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'NOT SURE')	
+                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'meters')	
         if args.v is not None:
             for axis in args.v:
                 if axis == 'x':
@@ -257,7 +387,12 @@ def main():
                 if axis == 'z':
                     s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
                 if axis == 'yz':
+<<<<<<< HEAD
                     s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename} - {s.method}''', 'NOT SURE')
+=======
+                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename}''', 'NOT SURE')
+        
+>>>>>>> main
 
 
 class State():
@@ -380,9 +515,14 @@ class State():
     #     gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
     #     libmetawear.mbl_mw_datasignal_unsubscribe(gyro)
         
+<<<<<<< HEAD
     #     # disconnect
     #     libmetawear.mbl_mw_debug_disconnect(self.device.board)
+=======
+>>>>>>> main
 
+    def disconnect_sensor(self):
+        libmetawear.mbl_mw_debug_disconnect(self.device.board)
 
     # def acc_data_handler (self, ctx, data):
     #     d = parse_value(data)
@@ -418,14 +558,14 @@ class State():
         self.lin_acc = np.array(lin_acc)
 
 
-    def save_lin_acc(self, filename):
+    def save_lin_acc(self, filename, file_number):
         try:
             os.makedirs(".data")
         except OSError:
             pass # data dir already exists
 
         try:
-            with open(os.path.join(".data", filename), 'w') as f:
+            with open(os.path.join(".data", filename + str(file_number) + ".csv"), 'w') as f:
                 writer = csv.writer(f)
                 for row in self.lin_acc:
                     writer.writerow([str(r) for r in row])
