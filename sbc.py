@@ -1,5 +1,5 @@
-# from mbientlab.metawear import MetaWear, libmetawear, parse_value
-# from mbientlab.metawear.cbindings import *
+from mbientlab.metawear import MetaWear, libmetawear, parse_value
+from mbientlab.metawear.cbindings import *
 
 from random import sample
 import time
@@ -204,9 +204,9 @@ def main():
 
     #data is now found as acceleration  
     for s in states:
-        # print("\naccel before error correction:")
-        # print(s.lin_acc)
-        # print(len(s.lin_acc))
+        print("\naccel before error correction:")
+        print(s.lin_acc)
+        print(len(s.lin_acc))
         if args.e is not None:
             s.method = args.e
             print("Method selected for error correction: ",s.method)
@@ -223,12 +223,12 @@ def main():
         #printing time
         np.set_printoptions(suppress=True, precision=3)
         
-        # print("acceleration:")
-        # print(len(s.lin_acc))
-        # for i in range(len(s.lin_acc)):
-        #     print(s.lin_acc[i])
-        #     print(s.accCorrected[i])
-        #     print("\n")
+        print("acceleration:")
+        print(len(s.lin_acc))
+        for i in range(len(s.lin_acc)):
+            print(s.lin_acc[i])
+            print(s.accCorrected[i])
+            print("\n")
         
         # print("\n\nvelocity:")
         # print(len(s.vel))
@@ -310,105 +310,105 @@ class State():
         self.velCorrected = []
         self.posCorrected = []
 
-        # self.acc_callback = FnVoid_VoidP_DataP(self.acc_data_handler)
-        # self.gyr_callback = FnVoid_VoidP_DataP(self.gyr_data_handler)
+        self.acc_callback = FnVoid_VoidP_DataP(self.acc_data_handler)
+        self.gyr_callback = FnVoid_VoidP_DataP(self.gyr_data_handler)
 
         self.signal_acc = None
         self.signal_gyr = None
         self.signal_fus = None
 
 
-    # def start_fusion(self):
+    def start_fusion(self):
 
-    #     # Sensor fusion setup
-    #     libmetawear.mbl_mw_sensor_fusion_set_mode(self.device.board, 
-    #             SensorFusionMode.IMU_PLUS);
-    #     libmetawear.mbl_mw_sensor_fusion_set_acc_range(self.device.board, 
-    #             SensorFusionAccRange._8G);
-    #     libmetawear.mbl_mw_sensor_fusion_set_gyro_range(self.device.board, 
-    #             SensorFusionGyroRange._2000DPS);
-    #     libmetawear.mbl_mw_sensor_fusion_write_config(self.device.board);
+        # Sensor fusion setup
+        libmetawear.mbl_mw_sensor_fusion_set_mode(self.device.board, 
+                SensorFusionMode.IMU_PLUS);
+        libmetawear.mbl_mw_sensor_fusion_set_acc_range(self.device.board, 
+                SensorFusionAccRange._8G);
+        libmetawear.mbl_mw_sensor_fusion_set_gyro_range(self.device.board, 
+                SensorFusionGyroRange._2000DPS);
+        libmetawear.mbl_mw_sensor_fusion_write_config(self.device.board);
 
-    #     # Subscribe to the linear acceleration signal
-    #     signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
-    #             SensorFusionData.CORRECTED_ACC);
-    #     libmetawear.mbl_mw_datasignal_subscribe(signal, None, self.acc_callback);
+        # Subscribe to the linear acceleration signal
+        signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
+                SensorFusionData.CORRECTED_ACC);
+        libmetawear.mbl_mw_datasignal_subscribe(signal, None, self.acc_callback);
 
-    #     # Start sensor fusion (acc + gyro + on-board sensor fusion algo)
-    #     libmetawear.mbl_mw_sensor_fusion_enable_data(self.device.board, 
-    #             SensorFusionData.CORRECTED_ACC);
-    #     libmetawear.mbl_mw_sensor_fusion_start(self.device.board);
-
-
-    # def start_raw(self):
-
-    #     libmetawear.mbl_mw_acc_bmi160_set_odr(self.device.board,
-    #             AccBmi160Odr._100Hz) # BMI 160 specific call
-    #     libmetawear.mbl_mw_acc_bosch_set_range(self.device.board, AccBoschRange._4G)
-    #     libmetawear.mbl_mw_acc_write_acceleration_config(self.device.board)
-
-    #     # config gyro
-    #     libmetawear.mbl_mw_gyro_bmi160_set_range(self.device.board, GyroBoschRange._1000dps);
-    #     libmetawear.mbl_mw_gyro_bmi160_set_odr(self.device.board,
-    #             GyroBoschOdr._100Hz);
-    #     libmetawear.mbl_mw_gyro_bmi160_write_config(self.device.board);
-
-    #     # get acc signal and subscribe
-    #     acc = libmetawear.mbl_mw_acc_get_acceleration_data_signal(self.device.board)
-    #     libmetawear.mbl_mw_datasignal_subscribe(acc, None, self.acc_callback)
-
-    #     # get gyro signal and subscribe
-    #     gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
-    #     libmetawear.mbl_mw_datasignal_subscribe(gyro, None, self.gyr_callback)
-
-    #     # start acc
-    #     libmetawear.mbl_mw_acc_enable_acceleration_sampling(self.device.board)
-    #     libmetawear.mbl_mw_acc_start(self.device.board)
-
-    #     # start gyro
-    #     libmetawear.mbl_mw_gyro_bmi160_enable_rotation_sampling(self.device.board)
-    #     libmetawear.mbl_mw_gyro_bmi160_start(self.device.board)
+        # Start sensor fusion (acc + gyro + on-board sensor fusion algo)
+        libmetawear.mbl_mw_sensor_fusion_enable_data(self.device.board, 
+                SensorFusionData.CORRECTED_ACC);
+        libmetawear.mbl_mw_sensor_fusion_start(self.device.board);
 
 
-    # def shutdown_fusion(self):
-    #     # Stop sensor fusion
-    #     libmetawear.mbl_mw_sensor_fusion_stop(self.device.board);
+    def start_raw(self):
 
-    #     # Unsubscribe
-    #     signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
-    #             SensorFusionData.CORRECTED_ACC);
-    #     libmetawear.mbl_mw_datasignal_unsubscribe(signal);
+        libmetawear.mbl_mw_acc_bmi160_set_odr(self.device.board,
+                AccBmi160Odr._100Hz) # BMI 160 specific call
+        libmetawear.mbl_mw_acc_bosch_set_range(self.device.board, AccBoschRange._4G)
+        libmetawear.mbl_mw_acc_write_acceleration_config(self.device.board)
+
+        # config gyro
+        libmetawear.mbl_mw_gyro_bmi160_set_range(self.device.board, GyroBoschRange._1000dps);
+        libmetawear.mbl_mw_gyro_bmi160_set_odr(self.device.board,
+                GyroBoschOdr._100Hz);
+        libmetawear.mbl_mw_gyro_bmi160_write_config(self.device.board);
+
+        # get acc signal and subscribe
+        acc = libmetawear.mbl_mw_acc_get_acceleration_data_signal(self.device.board)
+        libmetawear.mbl_mw_datasignal_subscribe(acc, None, self.acc_callback)
+
+        # get gyro signal and subscribe
+        gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
+        libmetawear.mbl_mw_datasignal_subscribe(gyro, None, self.gyr_callback)
+
+        # start acc
+        libmetawear.mbl_mw_acc_enable_acceleration_sampling(self.device.board)
+        libmetawear.mbl_mw_acc_start(self.device.board)
+
+        # start gyro
+        libmetawear.mbl_mw_gyro_bmi160_enable_rotation_sampling(self.device.board)
+        libmetawear.mbl_mw_gyro_bmi160_start(self.device.board)
+
+
+    def shutdown_fusion(self):
+        # Stop sensor fusion
+        libmetawear.mbl_mw_sensor_fusion_stop(self.device.board);
+
+        # Unsubscribe
+        signal = libmetawear.mbl_mw_sensor_fusion_get_data_signal(self.device.board, 
+                SensorFusionData.CORRECTED_ACC);
+        libmetawear.mbl_mw_datasignal_unsubscribe(signal);
 
     
-    # def shutdown_raw(self):
-    #     # stop acc
-    #     libmetawear.mbl_mw_acc_stop(self.device.board)
-    #     libmetawear.mbl_mw_acc_disable_acceleration_sampling(self.device.board)
+    def shutdown_raw(self):
+        # stop acc
+        libmetawear.mbl_mw_acc_stop(self.device.board)
+        libmetawear.mbl_mw_acc_disable_acceleration_sampling(self.device.board)
         
-    #     # stop gyro
-    #     libmetawear.mbl_mw_gyro_bmi160_stop(self.device.board)
-    #     libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(self.device.board)
+        # stop gyro
+        libmetawear.mbl_mw_gyro_bmi160_stop(self.device.board)
+        libmetawear.mbl_mw_gyro_bmi160_disable_rotation_sampling(self.device.board)
 
-    #     # unsubscribe acc
-    #     acc = libmetawear.mbl_mw_acc_get_acceleration_data_signal(self.device.board)
-    #     libmetawear.mbl_mw_datasignal_unsubscribe(acc)
+        # unsubscribe acc
+        acc = libmetawear.mbl_mw_acc_get_acceleration_data_signal(self.device.board)
+        libmetawear.mbl_mw_datasignal_unsubscribe(acc)
         
-    #     # unsubscribe gyro
-    #     gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
-    #     libmetawear.mbl_mw_datasignal_unsubscribe(gyro)
+        # unsubscribe gyro
+        gyro = libmetawear.mbl_mw_gyro_bmi160_get_rotation_data_signal(self.device.board)
+        libmetawear.mbl_mw_datasignal_unsubscribe(gyro)
         
 
     def disconnect_sensor(self):
         libmetawear.mbl_mw_debug_disconnect(self.device.board)
 
-    # def acc_data_handler (self, ctx, data):
-    #     d = parse_value(data)
-    #     self.acc.append([d.x*9.81, d.y*9.81, (d.z-0.981)*9.81])
+    def acc_data_handler (self, ctx, data):
+        d = parse_value(data)
+        self.acc.append([d.x*9.81, d.y*9.81, (d.z-0.981)*9.81])
 
 
-    # def gyr_data_handler (self, ctx, data):
-    #     d = parse_value(data)
-    #     self.gyr.append([d.x, d.y, d.z])
+    def gyr_data_handler (self, ctx, data):
+        d = parse_value(data)
+        self.gyr.append([d.x, d.y, d.z])
 
 
     def conv_to_lin_acc(self, correct=False):
