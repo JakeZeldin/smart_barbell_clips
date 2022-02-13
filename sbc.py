@@ -17,7 +17,7 @@ from scipy import signal
 from ahrs.filters import Madgwick
 from ahrs import Quaternion
 
-samplePeriod=100 #the sensors operte at 100 Hz
+samplePeriod=100 #the sensors operate at 100 Hz
 
 def main():
     
@@ -28,10 +28,10 @@ def main():
             metavar="MAC")
 
     parser.add_argument("-s", nargs='+',
-            help="save recording or loaded data to .data/CSV",
+            help="save recording or loaded data to CSV file name. Will save data in uncalibrated_data and calibrated_data folders",
             metavar="FILESTRING")
     parser.add_argument("-l", nargs='+',
-            help="load linear acceleration from .data/CSV",
+            help="load linear acceleration from uncalibrated_data/CSV or calibrated_data/CSV",
             metavar="CSV")
 
     parser.add_argument("-d", action="store_true",
@@ -102,6 +102,9 @@ def main():
             device = MetaWear(mac)
             device.connect()
             states.append(State(device,None,mac[:2]))
+        
+        #Perform 5 second calibration
+        fivesecondcalibration(states, args.f)
 
         #Used for completing multiple data collections at a time 
         if args.n:
@@ -110,6 +113,8 @@ def main():
             continue_var = 1
         
         while(continue_var>=1):
+                
+            input_var = input("Press any character when you are ready to lift")
 
             if args.d is not True:
                 for s in states:
@@ -150,7 +155,18 @@ def main():
                         s.conv_to_lin_acc()
 
                     if args.s is not None:
-                        s.save_lin_acc(args.s[i], continue_var)
+                        s.save_lin_acc(args.s[i], continue_var, False)
+                    
+                    #Subtract Calibration Means
+                    s.subtract_means()
+                    
+                    if args.c and not args.f:
+                        s.conv_to_lin_acc(correct=True)
+                    else:
+                        s.conv_to_lin_acc()
+                    
+                    if args.s is not None:
+                        s.save_lin_acc(args.s[i], continue_var, True)
             else:
                 for i,s in enumerate(states):
                     if s.mac == "C4":
@@ -202,8 +218,10 @@ def main():
             for file_name in args.l:
                 states.append(State(None, file_name))
 
+    
     #data is now found as acceleration  
     for s in states:
+        '''
         print("\naccel before error correction:")
         print(s.lin_acc)
         print(len(s.lin_acc))
@@ -248,7 +266,7 @@ def main():
             s.lin_acc = s.accCorrected
             s.vel = s.velCorrected
             s.pos_acc = s.posCorrected
-        
+       '''
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
@@ -277,11 +295,36 @@ def main():
                     s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename} - {s.method}''', 'NOT SURE')
 
 
+def fivesecondcalibration(states, fusion_flag):
+    
+    print("About to perform 5 second calibration please make sure sensor is at rest")
+    
+    for s in states:
+        if fusion_flag:
+            s.start_fusion()
+        else:
+            s.start_raw()
+    
+    time.sleep(5)
+
+    for s in states:
+        if fusion_flag:
+            s.shutdown_fusion()
+        else:
+            s.shutdown_raw()
+
+    for s in states:
+        s.calc_means()
+
+
 class State():
     def __init__(self, device, filename=None, mac=None):
         self.device = device
         self.acc = []
         self.gyr = []
+        self.xmean = 0
+        self.ymean = 0
+        self.zmean = 0
         self.mac = mac
         self.filename = filename
         self.method = "NoCorrection"
@@ -290,8 +333,13 @@ class State():
             self.lin_acc = None 
 
         else:
-            try: 
-                f = open(os.path.join(".data", filename), 'r')
+            try:
+                #
+                #had to put uncalibrated_data or calibrated_data here manually 
+                #
+                #
+                f = open(os.path.join("uncalibrated_data", filename), 'r')
+        
             except OSError:
                 print("Could not open data file")
                 sys.exit(2)
@@ -317,6 +365,40 @@ class State():
         self.signal_gyr = None
         self.signal_fus = None
 
+    def calc_means(self):
+        for data_slice in self.acc:
+            
+            self.xmean += data_slice[0]
+            self.ymean += data_slice[1]
+            self.zmean += data_slice[2]
+
+        self.xmean = self.xmean/len(self.acc)
+        self.ymean = self.ymean/len(self.acc)
+        self.zmean = self.zmean/len(self.acc)
+        
+        #Reset acceleration and gyroscope arrays
+        self.acc = []
+        self.gyr = []
+
+        print("XMeans from Calibration")
+        print(self.xmean)
+        print("Ymeans from Calibration")
+        print(self.ymean)
+        print("Zmeans from Calibration")
+        print(self.zmean)
+
+    def subtract_means(self):
+
+        print("Subtracting means from Acc data")
+        print(self.xmean)
+        print(self.ymean)
+        print(self.zmean)
+        for counter in range(len(self.acc)):
+            
+            self.acc[counter][0] = self.acc[counter][0] - self.xmean
+            self.acc[counter][1] = self.acc[counter][1] - self.ymean
+            self.acc[counter][2] = self.acc[counter][2] - self.zmean
+            
 
     def start_fusion(self):
 
@@ -435,20 +517,35 @@ class State():
         self.lin_acc = np.array(lin_acc)
 
 
-    def save_lin_acc(self, filename, file_number):
-        try:
-            os.makedirs(".data")
-        except OSError:
-            pass # data dir already exists
+    def save_lin_acc(self, filename, file_number, calibration_flag):
+        if calibration_flag == False:
+            try:
+                os.makedirs("uncalibrated_data")
+            except OSError:
+                pass # data dir already exists
 
-        try:
-            with open(os.path.join(".data", filename + str(file_number) + ".csv"), 'w') as f:
-                writer = csv.writer(f)
-                for row in self.lin_acc:
-                    writer.writerow([str(r) for r in row])
+            try:
+                with open(os.path.join("uncalibrated_data", filename + str(file_number) + "uncalibrated.csv"), 'w') as f:
+                    writer = csv.writer(f)
+                    for row in self.lin_acc:
+                        writer.writerow([str(r) for r in row])
 
-        except OSError:
-            print("Invalid write permissions")
+            except OSError:
+                print("Invalid write permissions")
+        else:
+            try:
+                os.makedirs("calibrated_data")
+            except OSError:
+                pass # data dir already exists
+
+            try:
+                with open(os.path.join("calibrated_data", filename + str(file_number) + "calibrated.csv"), 'w') as f:
+                    writer = csv.writer(f)
+                    for row in self.lin_acc:
+                        writer.writerow([str(r) for r in row])
+
+            except OSError:
+                print("Invalid write permissions")
 
 
     def calc_vel(self):
