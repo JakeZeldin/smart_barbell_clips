@@ -215,8 +215,8 @@ def main():
             s.disconnect_sensor()
             
     if args.l is not None:
-            for file_name in args.l:
-                states.append(State(None, file_name))
+            for path_name in args.l:
+                states.append(State(None, path_name))
 
     
     #data is now found as acceleration  
@@ -266,7 +266,7 @@ def main():
             s.lin_acc = s.accCorrected
             s.vel = s.velCorrected
             s.pos_acc = s.posCorrected
-       '''
+        '''       
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
@@ -318,7 +318,7 @@ def fivesecondcalibration(states, fusion_flag):
 
 
 class State():
-    def __init__(self, device, filename=None, mac=None):
+    def __init__(self, device, pathname=None, filename=None,  mac=None):
         self.device = device
         self.acc = []
         self.gyr = []
@@ -326,10 +326,11 @@ class State():
         self.ymean = 0
         self.zmean = 0
         self.mac = mac
-        self.filename = filename
+        self.pathname = pathname
+        self.filename = pathname.split("/")[1]
         self.method = "NoCorrection"
 
-        if filename is None:
+        if  pathname is None:
             self.lin_acc = None 
 
         else:
@@ -338,7 +339,7 @@ class State():
                 #had to put uncalibrated_data or calibrated_data here manually 
                 #
                 #
-                f = open(os.path.join("uncalibrated_data", filename), 'r')
+                f = open(os.path.join(pathname), 'r')
         
             except OSError:
                 print("Could not open data file")
@@ -350,7 +351,7 @@ class State():
                 lin_acc.append([float(x) for x in row])
             self.lin_acc = np.array(lin_acc)
             f.close()
-
+        
         self.vel = []
         self.pos = []
 
@@ -744,24 +745,24 @@ class State():
             return
 
     def plot(self, data, title, units):
-        if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
-            os.mkdir(f'plots/{self.filename}')
+        if not os.path.exists(os.path.join(os.getcwd(),f"plots/{self.pathname.split('/')[0]}/{self.filename}")):
+            os.mkdir(f"plots/{self.pathname.split('/')[0]}/{self.filename}")
         print(f'Saving {title}')
         plt.plot(data)
         plt.title(title)
         plt.ylabel(units)
-        plt.savefig(f'plots/{self.filename}/{title}.png')
+        plt.savefig(f"plots/{self.pathname.split('/')[0]}/{self.filename}/{title}.png")
         #plt.show() #Optional to show plot
         plt.clf()
 
     def plot2D(self, dataX, dataY, title, units):
-        if not os.path.exists(os.path.join(os.getcwd(),f'plots/{self.filename}')):
-            os.mkdir(f'plots/{self.filename}')
+        if not os.path.exists(os.path.join(os.getcwd(),f"plots/{self.pathname.split('/')[0]}/{self.filename}")):
+            os.mkdir(f"plots/{self.pathname.split('/')[0]}/{self.filename}")
         print(f'Saving {title}')
         plt.plot(dataX, dataY)
         plt.title(title)
         plt.ylabel(units)
-        plt.savefig(f'plots/{self.filename}/{title}.png')
+        plt.savefig(f"plots/{self.pathname.split('/')[0]}/{self.filename}/{title}.png")
         #plt.show() #Optional to show plot
         plt.clf()
 if __name__ == "__main__":
