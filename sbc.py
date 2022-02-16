@@ -59,7 +59,8 @@ def main():
 
     # parser.add_argument("-z", "--zupt")
    
-    parser.add_argument("-e", type=str, help="after the acceleration has been found, apply an error correction method. Options are butter, new, ...")
+    parser.add_argument("-e", type=str, help="after the acceleration has been found, apply an error correction method. Options are butter, new, ...",
+    metavar="correctionMethod")
 
     args = parser.parse_args()
 
