@@ -241,33 +241,37 @@ def main():
 
         #printing time
         np.set_printoptions(suppress=True, precision=3)
-        
-        print("acceleration:")
-        print(len(s.lin_acc))
-        for i in range(len(s.lin_acc)):
-            print(s.lin_acc[i])
-            print(s.accCorrected[i])
-            print("\n")
-        
-        # print("\n\nvelocity:")
-        # print(len(s.vel))
-        # for i in range(len(s.vel)):
-        #     print(s.vel[i])
-        #     print(s.velCorrected[i])
-        #     print("\n")
-        
-        # print("\n\nposition:")
-        # print(len(s.pos))
-        # for i in range(len(s.pos)):
-        #     print(s.pos[i])
-        #     print(s.posCorrected[i])
-        #     print("\n")
+
+        # this block is for doing direct comparison
+        # acceleration, velocity, and position when they
+        # are uncorrected vs corrected
+        if args.e is not None:
+            print("acceleration:")
+            print(len(s.lin_acc))
+            for i in range(len(s.lin_acc)):
+                print(s.lin_acc[i])
+                print(s.accCorrected[i])
+                print("\n")
+            
+            # print("\n\nvelocity:")
+            # print(len(s.vel))
+            # for i in range(len(s.vel)):
+            #     print(s.vel[i])
+            #     print(s.velCorrected[i])
+            #     print("\n")
+            
+            # print("\n\nposition:")
+            # print(len(s.pos))
+            # for i in range(len(s.pos)):
+            #     print(s.pos[i])
+            #     print(s.posCorrected[i])
+            #     print("\n")
         
         if args.e is not  None:
             s.lin_acc = s.accCorrected
             s.vel = s.velCorrected
             s.pos_acc = s.posCorrected
-        '''       
+        '''
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
@@ -596,13 +600,11 @@ class State():
             b,a = signal.butter(1,(2*filterCutOff2)/samplePeriod,'low')
             acc_magFilt= signal.filtfilt(b , a, acc_magFilt)
             
+            stationaryThresh=0.05
             for i in range(len(acc_magFilt)):
                 acc_magFilt[i] = abs(acc_magFilt[i])
-                
-                
-            stationaryThresh=0.05
-            if acc_magFilt[i] < stationaryThresh:
-                stationary[i] = 1
+                if acc_magFilt[i] < stationaryThresh:
+                    stationary[i] = 1
             
             
             # change acceleration value to 0 if it is below a threshold
