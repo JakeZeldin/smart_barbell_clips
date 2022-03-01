@@ -222,13 +222,8 @@ def main():
     
     #data is now found as acceleration  
     for s in states:
-        '''
-        print("\naccel before error correction:")
-        print(s.lin_acc)
-        print(len(s.lin_acc))
         if args.e is not None:
             s.method = args.e
-            print("Method selected for error correction: ",s.method)
             # error correction methods will take in acceleration, then store acc, vel, and pos
             # in s.accCorrected, s.velCorrected, s.posCorrected, respectively 
             s.calc_vel()
@@ -239,6 +234,7 @@ def main():
             s.calc_vel()
             s.calc_pos()
 
+        '''
         #printing time
         np.set_printoptions(suppress=True, precision=3)
 
@@ -272,32 +268,33 @@ def main():
             s.vel = s.velCorrected
             s.pos_acc = s.posCorrected
         '''
+
         if args.a is not None:
             for axis in args.a:
                 if axis == 'x':
-                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename}''', 'meters/second^2')
+                    s.plot(s.lin_acc[:,0], f'''X Acceleration - {s.filename.split('.')[0]}''', 'meters/second^2')
                 if axis == 'y':
-                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename}''', 'meters/second')
+                    s.plot(s.lin_acc[:,1], f'''Y Acceleration - {s.filename.split('.')[0]}''', 'meters/second')
                 if axis == 'z':
-                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename}''', 'meters')	
+                    s.plot(s.lin_acc[:,2], f'''Z Acceleration - {s.filename.split('.')[0]}''', 'meters')	
         if args.v is not None:
             for axis in args.v:
                 if axis == 'x':
-                    s.plot(s.vel[:,0], f'''X Velocity - {s.filename}''', 'NOT SURE')
+                    s.plot(s.vel[:,0], f'''X Velocity - {s.filename.split('.')[0]}''', 'm/s')
                 if axis == 'y':
-                    s.plot(s.vel[:,1], f'''Y Velocity - {s.filename}''', 'NOT SURE')
+                    s.plot(s.vel[:,1], f'''Y Velocity - {s.filename.split('.')[0]}''', 'm/s')
                 if axis == 'z':
-                    s.plot(s.vel[:,2], f'''Z Velocity - {s.filename}''', 'NOT SURE')
+                    s.plot(s.vel[:,2], f'''Z Velocity - {s.filename.split('.')[0]}''', 'm/s')
         if args.p is not None:
             for axis in args.p:
                 if axis == 'x':
-                    s.plot(s.pos[:,0], f'''X Postion - {s.filename}''', 'NOT SURE')
+                    s.plot(s.pos[:,0], f'''X Postion - {s.filename.split('.')[0]}''', 'metres')
                 if axis == 'y':
-                    s.plot(s.pos[:,1], f'''Y Postion - {s.filename}''', 'NOT SURE')
+                    s.plot(s.pos[:,1], f'''Y Postion - {s.filename.split('.')[0]}''', 'metres')
                 if axis == 'z':
-                    s.plot(s.pos[:,2], f'''Z Postion - {s.filename}''', 'NOT SURE')
+                    s.plot(s.pos[:,2], f'''Z Postion - {s.filename.split('.')[0]}''', 'metres')
                 if axis == 'yz':
-                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename} - {s.method}''', 'NOT SURE')
+                    s.plot2D(s.pos[:,1], s.pos[:,2], f'''Y Z Postion - {s.filename.split('.')[0]} - {s.method}''', 'metres')
 
 
 def fivesecondcalibration(states, fusion_flag):
@@ -323,7 +320,7 @@ def fivesecondcalibration(states, fusion_flag):
 
 
 class State():
-    def __init__(self, device, pathname=None, filename=None,  mac=None):
+    def __init__(self, device, pathname=None, mac=None):
         self.device = device
         self.acc = []
         self.gyr = []
@@ -332,12 +329,14 @@ class State():
         self.zmean = 0
         self.mac = mac
         self.pathname = pathname
-        self.filename = pathname.split("/")[1]
         self.method = "NoCorrection"
+
+        if pathname is not None:
+            self.filename = pathname.split("/")[-1]
+
 
         if  pathname is None:
             self.lin_acc = None 
-
         else:
             try:
                 #
@@ -531,7 +530,8 @@ class State():
                 pass # data dir already exists
 
             try:
-                with open(os.path.join("uncalibrated_data", filename + str(file_number) + "uncalibrated.csv"), 'w') as f:
+                with open(os.path.join("uncalibrated_data", filename +
+                    str(file_number) + "_uncalibrated.csv"), 'w') as f:
                     writer = csv.writer(f)
                     for row in self.lin_acc:
                         writer.writerow([str(r) for r in row])
@@ -545,7 +545,8 @@ class State():
                 pass # data dir already exists
 
             try:
-                with open(os.path.join("calibrated_data", filename + str(file_number) + "calibrated.csv"), 'w') as f:
+                with open(os.path.join("calibrated_data", filename +
+                    str(file_number) + "_calibrated.csv"), 'w') as f:
                     writer = csv.writer(f)
                     for row in self.lin_acc:
                         writer.writerow([str(r) for r in row])
@@ -565,10 +566,91 @@ class State():
 
 
     def error_correction(self, method):
-        # this is where new error correction methods are implemented    
-         if method == "new":
-            print("new error correction method")
-            return
+
+        if method == "simple_z":
+
+            z_thresh = 0.5
+            w_size = 5
+
+            windows = [self.lin_acc[i-w_size:i,2] for i in range(w_size,
+                len(self.lin_acc))]
+
+            stationary_flags = [1]*w_size
+
+            for i in range(w_size, len(self.lin_acc)):
+                for a in windows[i-w_size]:
+
+                    stat_flag = 1
+
+                    if abs(a) > z_thresh:
+                        stat_flag = 0
+                        break
+
+                stationary_flags.append(stat_flag)
+
+            vel_errors = []
+            for i,v in enumerate(self.vel[:,2]):
+                if stationary_flags[i] == 1:
+                    vel_errors.append(0)
+                else:
+                    vel_errors.append(v)
+
+
+            drift_starts = []
+            drift_counts = []
+            drift_ends = []
+            drift_flag = 0
+            count = 0
+
+            for i,v in enumerate(vel_errors):
+
+                if v != 0:
+                    if drift_flag == 0:
+                        drift_flag = 1
+                        drift_starts.append(v)
+                    count += 1
+
+                else:
+                    if drift_flag == 1:
+                        drift_flag = 0
+                        drift_ends.append(vel_errors[i-1])
+                        drift_counts.append(count)
+                        count = 0
+
+            if drift_flag == 1:
+                drift_ends.append(vel_errors[-1])
+                drift_counts.append(count)
+
+            drift_avgs = []
+            for i in range(len(drift_starts)):
+                drift_avgs.append((drift_ends[i] -
+                        drift_starts[i])/drift_counts[i])
+
+            drift_flag = 0
+            drift_num = 0
+            old_vel = self.vel
+
+            for i,v in enumerate(vel_errors):
+
+                if v != 0:
+                    if drift_flag == 0:
+                        drift_flag = 1
+                    
+                    self.vel[i,2] = v - (count*drift_avgs[drift_num])
+                    count += 1
+
+                else:
+                    self.vel[i,2] = 0
+                    if drift_flag == 1:
+                        drift_flag = 0
+                        count = 0
+                        drift_num += 1
+
+            self.calc_pos()
+
+
+                
+        '''
          elif method == "butter": 
             #split up acc in to x,y,z
             #these were all multiplied by 9.81, but we dont need to do that anymore?
@@ -743,31 +825,35 @@ class State():
 
             
             return
-         else:
+        else:
             print("invalid method for error correction")
-            return
+        '''
 
     def plot(self, data, title, units):
-        if not os.path.exists(os.path.join(os.getcwd(),f"plots/{self.pathname.split('/')[0]}/{self.filename}")):
-            os.mkdir(f"plots/{self.pathname.split('/')[0]}/{self.filename}")
+        plot_path = os.path.join("plots", self.pathname.split('.')[0])
+        if not os.path.exists(plot_path):
+            os.makedirs(plot_path)
         print(f'Saving {title}')
         plt.plot(data)
         plt.title(title)
         plt.ylabel(units)
-        plt.savefig(f"plots/{self.pathname.split('/')[0]}/{self.filename}/{title}.png")
+        plt.savefig(os.path.join(plot_path, title + ".png"))
         #plt.show() #Optional to show plot
         plt.clf()
 
     def plot2D(self, dataX, dataY, title, units):
-        if not os.path.exists(os.path.join(os.getcwd(),f"plots/{self.pathname.split('/')[0]}/{self.filename}")):
-            os.mkdir(f"plots/{self.pathname.split('/')[0]}/{self.filename}")
+        plot_path = os.path.join("plots", self.pathname.split('.')[0])
+        if not os.path.exists(plot_path):
+            os.makedirs(plot_path)
         print(f'Saving {title}')
         plt.plot(dataX, dataY)
         plt.title(title)
         plt.ylabel(units)
-        plt.savefig(f"plots/{self.pathname.split('/')[0]}/{self.filename}/{title}.png")
+        plt.xlabel(units)
+        plt.savefig(os.path.join(plot_path, title + ".png"))
         #plt.show() #Optional to show plot
         plt.clf()
+
 if __name__ == "__main__":
     main()
 
