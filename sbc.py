@@ -570,7 +570,7 @@ class State():
         if method == "simple_z":
 
             z_thresh = 0.5
-            w_size = 5
+            w_size = 10
 
             windows = [self.lin_acc[i-w_size:i,2] for i in range(w_size,
                 len(self.lin_acc))]
