@@ -565,10 +565,91 @@ class State():
 
 
     def error_correction(self, method):
-        # this is where new error correction methods are implemented    
-         if method == "new":
-            print("new error correction method")
-            return
+
+        if method == "simple_z":
+
+            z_thresh = 0.5
+            w_size = 10
+
+            windows = [self.lin_acc[i-w_size:i,2] for i in range(w_size,
+                len(self.lin_acc))]
+
+            stationary_flags = [1]*w_size
+
+            for i in range(w_size, len(self.lin_acc)):
+                for a in windows[i-w_size]:
+
+                    stat_flag = 1
+
+                    if abs(a) > z_thresh:
+                        stat_flag = 0
+                        break
+
+                stationary_flags.append(stat_flag)
+
+            vel_errors = []
+            for i,v in enumerate(self.vel[:,2]):
+                if stationary_flags[i] == 1:
+                    vel_errors.append(0)
+                else:
+                    vel_errors.append(v)
+
+
+            drift_starts = []
+            drift_counts = []
+            drift_ends = []
+            drift_flag = 0
+            count = 0
+
+            for i,v in enumerate(vel_errors):
+
+                if v != 0:
+                    if drift_flag == 0:
+                        drift_flag = 1
+                        drift_starts.append(v)
+                    count += 1
+
+                else:
+                    if drift_flag == 1:
+                        drift_flag = 0
+                        drift_ends.append(vel_errors[i-1])
+                        drift_counts.append(count)
+                        count = 0
+
+            if drift_flag == 1:
+                drift_ends.append(vel_errors[-1])
+                drift_counts.append(count)
+
+            drift_avgs = []
+            for i in range(len(drift_starts)):
+                drift_avgs.append((drift_ends[i] -
+                        drift_starts[i])/drift_counts[i])
+
+            drift_flag = 0
+            drift_num = 0
+            old_vel = self.vel
+
+            for i,v in enumerate(vel_errors):
+
+                if v != 0:
+                    if drift_flag == 0:
+                        drift_flag = 1
+                    
+                    self.vel[i,2] = v - (count*drift_avgs[drift_num])
+                    count += 1
+
+                else:
+                    self.vel[i,2] = 0
+                    if drift_flag == 1:
+                        drift_flag = 0
+                        count = 0
+                        drift_num += 1
+
+            self.calc_pos()
+
+
+                
+        '''
          elif method == "butter": 
             #split up acc in to x,y,z
             #these were all multiplied by 9.81, but we dont need to do that anymore?
