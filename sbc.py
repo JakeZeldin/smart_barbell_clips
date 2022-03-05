@@ -4,6 +4,7 @@ from mbientlab.metawear.cbindings import *
 from random import sample
 import time
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import numpy as np
 import scipy.integrate
 import math
@@ -33,6 +34,8 @@ def main():
     parser.add_argument("-l", nargs='+',
             help="load linear acceleration from uncalibrated_data/CSV or calibrated_data/CSV",
             metavar="CSV")
+    parser.add_argument("-x", action="store_true",
+            help="This flag brings da heat in the form of a force heat graph")
 
     parser.add_argument("-d", action="store_true",
             help="have first sensor enetered perform mbient fusion and second sensor perform wills fusion")
@@ -268,6 +271,8 @@ def main():
             s.vel = s.velCorrected
             s.pos_acc = s.posCorrected
         '''
+        if args.x is True:
+             s.plot_heat()
 
         if args.a is not None:
             for axis in args.a:
@@ -391,6 +396,47 @@ class State():
         print(self.ymean)
         print("Zmeans from Calibration")
         print(self.zmean)
+    
+    def plot_heat(self):
+    
+        counter = 0
+        viridis = cm.get_cmap('turbo', 512) 
+        lin_acc_norm = []
+        
+        
+        for acc in self.lin_acc[:]:
+            if acc[2] < 0:
+                lin_acc_norm.append(acc[2]*-1)
+            else:
+                lin_acc_norm.append(acc[2])
+        
+        lin_acc_norm = np.array(lin_acc_norm)
+        
+        lin_acc_norm = (lin_acc_norm[:] - np.min(lin_acc_norm[:]))/ (np.max(lin_acc_norm[:]) - np.min(lin_acc_norm[:]))
+        
+        y = []
+        z = []
+        
+        for counter in range(0, len(self.pos)-1):
+            temp = []
+            temp.append(self.pos[counter,1])
+            temp.append(self.pos[counter+1,1])
+            y.append(temp)
+            temp = []
+            temp.append(self.pos[counter,2])
+            temp.append(self.pos[counter+1,2])
+            z.append(temp)
+            temp = []
+
+        for counter in range(0,len(y)-1):
+            
+            plt.plot(y[counter], z[counter], c=viridis(lin_acc_norm[counter]), lw = 3)
+            
+            
+            if counter == len(self.pos):
+                break;
+        plt.show()
+
 
     def subtract_means(self):
 
