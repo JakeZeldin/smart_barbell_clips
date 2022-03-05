@@ -569,8 +569,8 @@ class State():
 
         if method == "simple_z":
 
-            z_thresh = 0.5
-            w_size = 5
+            z_thresh = 0.20
+            w_size = 3
 
             windows = [self.lin_acc[i-w_size:i,2] for i in range(w_size,
                 len(self.lin_acc))]
@@ -647,7 +647,6 @@ class State():
                         drift_num += 1
 
             self.calc_pos()
-
 
                 
         '''
