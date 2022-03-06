@@ -615,8 +615,15 @@ class State():
 
         if method == "simple_z":
 
-            z_thresh = 0.20
-            w_size = 3
+            final_vels = self.vel[-10:-1, 2]
+            avg_final = np.average(final_vels)
+            vel_drift = avg_final/(len(self.vel))
+            
+            for i,v in enumerate(self.vel):
+                self.vel[i, 2] = v[2] - (vel_drift * i)
+            
+            z_thresh = 0.5
+            w_size = 5
 
             windows = [self.lin_acc[i-w_size:i,2] for i in range(w_size,
                 len(self.lin_acc))]
@@ -674,7 +681,6 @@ class State():
 
             drift_flag = 0
             drift_num = 0
-            old_vel = self.vel
 
             for i,v in enumerate(vel_errors):
 
@@ -694,6 +700,104 @@ class State():
 
             self.calc_pos()
 
+            final_vels = self.vel[-10:-1, 1]
+            avg_final = np.average(final_vels)
+            vel_drift = avg_final/(len(self.vel))
+            
+            for i,v in enumerate(self.vel):
+                self.vel[i, 1] = v[1] - (vel_drift * i)
+
+            y_thresh = 0.5
+            w_size = 5
+
+            windows = [self.lin_acc[i-w_size:i,1] for i in range(w_size,
+                len(self.lin_acc))]
+
+            stationary_flags = [1]*w_size
+
+            for i in range(w_size, len(self.lin_acc)):
+                for a in windows[i-w_size]:
+
+                    stat_flag = 1
+
+                    if abs(a) > y_thresh:
+                        stat_flag = 0
+                        break
+
+                stationary_flags.append(stat_flag)
+
+            vel_errors = []
+            for i,v in enumerate(self.vel[:,1]):
+                if stationary_flags[i] == 1:
+                    vel_errors.append(0)
+                else:
+                    vel_errors.append(v)
+
+
+            drift_starts = []
+            drift_counts = []
+            drift_ends = []
+            drift_flag = 0
+            count = 0
+
+            for i,v in enumerate(vel_errors):
+
+                if v != 0:
+                    if drift_flag == 0:
+                        drift_flag = 1
+                        drift_starts.append(v)
+                    count += 1
+
+                else:
+                    if drift_flag == 1:
+                        drift_flag = 0
+                        drift_ends.append(vel_errors[i-1])
+                        drift_counts.append(count)
+                        count = 0
+
+            if drift_flag == 1:
+                drift_ends.append(vel_errors[-1])
+                drift_counts.append(count)
+
+            drift_avgs = []
+            for i in range(len(drift_starts)):
+                drift_avgs.append((drift_ends[i] -
+                        drift_starts[i])/drift_counts[i])
+
+            drift_flag = 0
+            drift_num = 0
+
+            old_vel = np.copy(self.vel)
+            for i,v in enumerate(vel_errors):
+
+                if v != 0:
+                    if drift_flag == 0:
+                        drift_flag = 1
+                    
+                    self.vel[i,1] = v - (count*drift_avgs[drift_num])
+                    count += 1
+
+                else:
+                    self.vel[i,1] = 0
+                    if drift_flag == 1:
+                        drift_flag = 0
+                        count = 0
+                        drift_num += 1
+
+            for i in range(len(self.lin_acc) - 1):
+                print(self.lin_acc[i, 2], self.lin_acc[i, 1], 
+                        old_vel[i, 1], self.vel[i, 1])
+
+            self.calc_pos()
+
+        elif method == "simple_z_v2":
+            final_vels = self.vel[-10:-1, 2]
+            avg_final = np.average(final_vels)
+            vel_drift = avg_final/(len(self.vel))
+            
+            for i,v in enumerate(self.vel):
+                self.vel[i, 2] = v[2] - (vel_drift * i)
+            
                 
         '''
          elif method == "butter": 
@@ -895,6 +999,7 @@ class State():
         plt.title(title)
         plt.ylabel(units)
         plt.xlabel(units)
+        plt.axis("square")
         plt.savefig(os.path.join(plot_path, title + ".png"))
         #plt.show() #Optional to show plot
         plt.clf()
