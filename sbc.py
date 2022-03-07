@@ -435,7 +435,19 @@ class State():
             
             if counter == len(self.pos):
                 break;
-        plt.show()
+        plt.axis("square")
+        plot_path = os.path.join("heat_plots")
+        if not os.path.exists(plot_path):
+            os.makedirs(plot_path)
+        
+        plt.title("Y Z Velocity Heat Graph")
+        plt.ylabel("Z position (m)")
+        plt.xlabel("Y position (m)")
+        plt.axis("square")
+        plt.savefig(os.path.join(plot_path, self.filename + ".png"))
+
+        plt.clf()
+
 
 
     def subtract_means(self):
