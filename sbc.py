@@ -401,18 +401,18 @@ class State():
     
         counter = 0
         viridis = cm.get_cmap('turbo', 512) 
-        lin_acc_norm = []
+        vel_norm = []
         
         
-        for acc in self.lin_acc[:]:
-            if acc[2] < 0:
-                lin_acc_norm.append(acc[2]*-1)
+        for vel in self.vel[:]:
+            if vel[2] < 0:
+                vel_norm.append(vel[2]*-1)
             else:
-                lin_acc_norm.append(acc[2])
+                vel_norm.append(vel[2])
         
-        lin_acc_norm = np.array(lin_acc_norm)
+        vel_norm = np.array(vel_norm)
         
-        lin_acc_norm = (lin_acc_norm[:] - np.min(lin_acc_norm[:]))/ (np.max(lin_acc_norm[:]) - np.min(lin_acc_norm[:]))
+        vel_norm = (vel_norm[:] - np.min(vel_norm[:]))/ (np.max(vel_norm[:]) - np.min(vel_norm[:]))
         
         y = []
         z = []
@@ -430,7 +430,7 @@ class State():
 
         for counter in range(0,len(y)-1):
             
-            plt.plot(y[counter], z[counter], c=viridis(lin_acc_norm[counter]), lw = 3)
+            plt.plot(y[counter], z[counter], c=viridis(vel_norm[counter]), lw = 3)
             
             
             if counter == len(self.pos):
