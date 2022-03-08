@@ -635,7 +635,7 @@ class State():
             for i,v in enumerate(self.vel):
                 self.vel[i, 2] = v[2] - (vel_drift * i)
             
-            z_thresh = 0.5
+            z_thresh = 0.25
             w_size = 5
 
             windows = [self.lin_acc[i-w_size:i,2] for i in range(w_size,
