@@ -436,6 +436,7 @@ class State():
             if counter == len(self.pos):
                 break;
         plt.axis("square")
+        plt.margins(x=0.5)
         plot_path = os.path.join("heat_plots")
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
